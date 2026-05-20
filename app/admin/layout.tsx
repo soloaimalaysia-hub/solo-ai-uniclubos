@@ -42,10 +42,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           .eq('id', session.user.id)
           .single()
         if (profile) {
-          setUser(profile)
+          // Normalise: DB has both 'name' and 'full_name' columns
+          setUser({
+            ...profile,
+            full_name: profile.full_name || profile.name || session.user.email,
+          })
         } else {
-          router.push('/admin-login')
-          return
+          // Auto-create profile for first-time admin login
+          const newProfile = {
+            id: session.user.id,
+            email: session.user.email,
+            full_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0],
+            name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0],
+            platform_role: 'super_admin',
+          }
+          await supabase.from('uco_users').upsert(newProfile)
+          setUser(newProfile)
         }
       }
       setChecking(false)

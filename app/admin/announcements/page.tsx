@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useAppStore } from '@/store/useAppStore'
 import { Plus, X, Save, Bell, Pin, Eye, EyeOff, Calendar } from 'lucide-react'
 
 interface Announcement {
@@ -12,10 +13,11 @@ interface Announcement {
   is_published: boolean
   published_at: string | null
   expires_at: string | null
-  created_by: string | null
+  created_by_name: string | null
 }
 
 export default function AnnouncementsPage() {
+  const { user } = useAppStore()
   const [items, setItems] = useState<Announcement[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
@@ -23,11 +25,13 @@ export default function AnnouncementsPage() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
-  useEffect(() => { loadItems() }, [])
+  useEffect(() => { loadItems() }, [])  // eslint-disable-line react-hooks/exhaustive-deps
 
   async function loadItems() {
     const supabase = createClient()
-    const { data } = await supabase.from('uco_announcements').select('*').order('created_at', { ascending: false })
+    let q = supabase.from('uco_announcements').select('*').order('created_at', { ascending: false })
+    if (user?.club_id) q = q.eq('club_id', user.club_id)
+    const { data } = await q
     setItems(data || [])
     setLoading(false)
   }
@@ -48,7 +52,8 @@ export default function AnnouncementsPage() {
       is_published: editing.is_published ?? true,
       published_at: editing.is_published ? (editing.published_at || new Date().toISOString()) : null,
       expires_at: editing.expires_at || null,
-      created_by: editing.created_by || null,
+      created_by_name: editing.created_by_name || null,
+      club_id: user?.club_id,
     }
     if (editing.id) {
       await supabase.from('uco_announcements').update({ ...payload, updated_at: new Date().toISOString() }).eq('id', editing.id)
@@ -161,8 +166,8 @@ export default function AnnouncementsPage() {
               <div>
                 <label className="label">Author</label>
                 <input className="input" placeholder="Captain / Committee"
-                  value={editing.created_by || ''}
-                  onChange={e => setEditing(prev => ({ ...prev, created_by: e.target.value }))} />
+                  value={editing.created_by_name || ''}
+                  onChange={e => setEditing(prev => ({ ...prev, created_by_name: e.target.value }))} />
               </div>
               <div>
                 <label className="label">Expires On (optional)</label>
@@ -223,7 +228,7 @@ function AnnouncementCard({ item, onEdit, onTogglePin, onTogglePublish, formatDa
         <div className="flex items-center gap-1.5 text-xs text-uco-text-muted">
           <Calendar size={11} />
           {item.published_at ? formatDate(item.published_at) : 'Not published'}
-          {item.created_by && ` • ${item.created_by}`}
+          {item.created_by_name && ` • ${item.created_by_name}`}
         </div>
         <div className="flex items-center gap-1">
           <button onClick={onTogglePin} title={item.is_pinned ? 'Unpin' : 'Pin'}

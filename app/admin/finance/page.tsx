@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useAppStore } from '@/store/useAppStore'
 import { Plus, X, Save, DollarSign, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight } from 'lucide-react'
 
 interface Transaction {
@@ -19,6 +20,7 @@ const INCOME_CATEGORIES = ['Membership Fee', 'Event Ticket', 'Sponsorship', 'Don
 const EXPENSE_CATEGORIES = ['Equipment', 'Venue', 'Food & Beverage', 'Transport', 'Printing', 'Marketing', 'Award', 'Other Expense']
 
 export default function FinancePage() {
+  const { user } = useAppStore()
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
@@ -27,11 +29,13 @@ export default function FinancePage() {
   const [saved, setSaved] = useState(false)
   const [typeTab, setTypeTab] = useState<'all' | 'income' | 'expense'>('all')
 
-  useEffect(() => { loadTransactions() }, [])
+  useEffect(() => { loadTransactions() }, [])  // eslint-disable-line react-hooks/exhaustive-deps
 
   async function loadTransactions() {
     const supabase = createClient()
-    const { data } = await supabase.from('uco_finance').select('*').order('transaction_date', { ascending: false })
+    let q = supabase.from('uco_finance').select('*').order('transaction_date', { ascending: false })
+    if (user?.club_id) q = q.eq('club_id', user.club_id)
+    const { data } = await q
     setTransactions(data || [])
     setLoading(false)
   }
@@ -53,6 +57,7 @@ export default function FinancePage() {
       transaction_date: editingTx.transaction_date || new Date().toISOString().split('T')[0],
       reference_no: editingTx.reference_no || null,
       approved_by: editingTx.approved_by || null,
+      club_id: user?.club_id,
     }
     if (editingTx.id) {
       await supabase.from('uco_finance').update({ ...payload, updated_at: new Date().toISOString() }).eq('id', editingTx.id)

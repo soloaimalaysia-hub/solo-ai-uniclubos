@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useAppStore } from '@/store/useAppStore'
 import { Plus, Search, X, Save, Phone, Mail, Users } from 'lucide-react'
 
 interface Member {
@@ -25,6 +26,7 @@ function initials(name: string) {
 }
 
 export default function MembersPage() {
+  const { user } = useAppStore()
   const [members, setMembers] = useState<Member[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -33,11 +35,13 @@ export default function MembersPage() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
-  useEffect(() => { loadMembers() }, [])
+  useEffect(() => { loadMembers() }, [])  // eslint-disable-line react-hooks/exhaustive-deps
 
   async function loadMembers() {
     const supabase = createClient()
-    const { data } = await supabase.from('uco_members').select('*').order('joined_at', { ascending: false })
+    let q = supabase.from('uco_members').select('*').order('joined_at', { ascending: false })
+    if (user?.club_id) q = q.eq('club_id', user.club_id)
+    const { data } = await q
     setMembers(data || [])
     setLoading(false)
   }
@@ -61,11 +65,14 @@ export default function MembersPage() {
       email: editingMember.email || null,
       phone: editingMember.phone || null,
       role: editingMember.role || 'Member',
+      position: editingMember.role || 'Member',
       student_id: editingMember.student_id || null,
       status: editingMember.status || 'active',
       faculty: editingMember.faculty || null,
       year_of_study: editingMember.year_of_study ? Number(editingMember.year_of_study) : null,
       joined_at: editingMember.joined_at || new Date().toISOString().split('T')[0],
+      joined_date: editingMember.joined_at || new Date().toISOString().split('T')[0],
+      club_id: user?.club_id,
     }
     if (editingMember.id) {
       await supabase.from('uco_members').update({ ...payload, updated_at: new Date().toISOString() }).eq('id', editingMember.id)
@@ -80,12 +87,11 @@ export default function MembersPage() {
   const filtered = members.filter(m =>
     m.full_name.toLowerCase().includes(search.toLowerCase()) ||
     (m.email?.toLowerCase().includes(search.toLowerCase())) ||
-    (m.role.toLowerCase().includes(search.toLowerCase()))
+    (m.role?.toLowerCase().includes(search.toLowerCase()))
   )
 
   return (
     <div className="p-6 lg:p-8 max-w-6xl">
-      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-black text-uco-text flex items-center gap-2">
@@ -98,18 +104,12 @@ export default function MembersPage() {
         </button>
       </div>
 
-      {/* Search */}
       <div className="relative mb-5">
         <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-uco-text-muted" />
-        <input
-          className="input pl-10"
-          placeholder="Search by name, email or role..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-        />
+        <input className="input pl-10" placeholder="Search by name, email or role..."
+          value={search} onChange={e => setSearch(e.target.value)} />
       </div>
 
-      {/* Table */}
       {loading ? (
         <div className="text-center py-16 text-uco-text-muted text-sm">Loading members...</div>
       ) : filtered.length === 0 ? (
@@ -147,9 +147,7 @@ export default function MembersPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-5 py-3.5">
-                      <span className="badge-blue">{m.role}</span>
-                    </td>
+                    <td className="px-5 py-3.5"><span className="badge-blue">{m.role || 'Member'}</span></td>
                     <td className="px-5 py-3.5 hidden md:table-cell">
                       <div className="space-y-0.5">
                         {m.email && <div className="flex items-center gap-1.5 text-xs text-uco-text-muted"><Mail size={11} />{m.email}</div>}
@@ -157,16 +155,13 @@ export default function MembersPage() {
                       </div>
                     </td>
                     <td className="px-5 py-3.5 hidden lg:table-cell text-xs text-uco-text-muted">
-                      {new Date(m.joined_at).toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      {m.joined_at ? new Date(m.joined_at).toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
                     </td>
                     <td className="px-5 py-3.5">
-                      <span className={m.status === 'active' ? 'badge-green' : 'badge-gray'}>
-                        {m.status}
-                      </span>
+                      <span className={m.status === 'active' ? 'badge-green' : 'badge-gray'}>{m.status}</span>
                     </td>
                     <td className="px-5 py-3.5">
-                      <button onClick={() => openEdit(m)}
-                        className="text-xs font-semibold hover:underline" style={{ color: '#1E3A8A' }}>Edit</button>
+                      <button onClick={() => openEdit(m)} className="text-xs font-semibold hover:underline" style={{ color: '#1E3A8A' }}>Edit</button>
                     </td>
                   </tr>
                 ))}
@@ -176,15 +171,12 @@ export default function MembersPage() {
         </div>
       )}
 
-      {/* Modal */}
       {showModal && editingMember && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-4 border-b border-uco-border flex items-center justify-between">
               <h2 className="font-bold text-uco-text">{editingMember.id ? 'Edit Member' : 'Add New Member'}</h2>
-              <button onClick={() => setShowModal(false)} className="p-1.5 rounded-lg hover:bg-uco-surface text-uco-text-muted">
-                <X size={18} />
-              </button>
+              <button onClick={() => setShowModal(false)} className="p-1.5 rounded-lg hover:bg-uco-surface text-uco-text-muted"><X size={18} /></button>
             </div>
             <div className="p-6 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -251,7 +243,7 @@ export default function MembersPage() {
               <button onClick={saveMember} disabled={saving}
                 className="btn-primary text-sm px-5 py-2 disabled:opacity-60">
                 <Save size={14} />
-                {saving ? 'Saving...' : saved ? 'Saved!' : 'Save Member'}
+                {saving ? 'Saving...' : saved ? '✓ Saved!' : 'Save Member'}
               </button>
             </div>
           </div>

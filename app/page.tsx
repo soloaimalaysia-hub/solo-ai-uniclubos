@@ -124,7 +124,7 @@ export default function LandingPage() {
               <Link href="/admin-login" className="text-sm font-semibold text-uco-blue hover:text-uco-blue-dark transition-colors">
                 Log in
               </Link>
-              <Link href="/admin-login" className="btn-primary text-sm">
+              <Link href="/register" className="btn-primary text-sm">
                 Get Started Free
               </Link>
             </div>
@@ -140,7 +140,7 @@ export default function LandingPage() {
               <a key={l.label} href={l.href} onClick={() => setMobileOpen(false)}
                 className="block text-sm font-medium text-uco-text py-2">{l.label}</a>
             ))}
-            <Link href="/admin-login" className="btn-primary w-full justify-center mt-3 block text-center">
+            <Link href="/register" className="btn-primary w-full justify-center mt-3 block text-center">
               Get Started Free
             </Link>
           </div>
@@ -164,7 +164,7 @@ export default function LandingPage() {
               Stop managing your club on WhatsApp and Excel. UniClub OS gives you a complete dashboard for members, activities, finance, and announcements — all in one place.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Link href="/admin-login" className="btn-primary text-base px-7 py-3.5 gap-2 inline-flex justify-center">
+              <Link href="/register" className="btn-primary text-base px-7 py-3.5 gap-2 inline-flex justify-center">
                 Start Free Today <ArrowRight size={18} />
               </Link>
               <a href="#features" className="btn-outline text-base px-7 py-3.5 inline-flex justify-center">
@@ -449,7 +449,7 @@ export default function LandingPage() {
                     </li>
                   ))}
                 </ul>
-                <Link href="/admin-login"
+                <Link href="/register"
                   className={`block text-center px-5 py-3 rounded-xl font-bold text-sm transition-all ${plan.featured
                     ? 'bg-white hover:bg-blue-50'
                     : 'text-white hover:opacity-90'}`}
@@ -472,7 +472,7 @@ export default function LandingPage() {
           <p className="text-uco-text-muted text-lg mb-8 max-w-xl mx-auto">
             Join university clubs across Malaysia who have switched to UniClub OS. Free to start.
           </p>
-          <Link href="/admin-login" className="btn-primary text-base px-8 py-4 gap-2 inline-flex items-center">
+          <Link href="/register" className="btn-primary text-base px-8 py-4 gap-2 inline-flex items-center">
             Get Started for Free <ArrowRight size={18} />
           </Link>
           <p className="text-xs text-uco-text-muted mt-4">No credit card &bull; Setup in 2 minutes &bull; Cancel anytime</p>

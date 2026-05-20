@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useAppStore } from '@/store/useAppStore'
 import { Plus, X, Save, Calendar, MapPin, Clock, Users } from 'lucide-react'
 
 interface Activity {
@@ -27,6 +28,7 @@ function statusColor(s: string) {
 }
 
 export default function ActivitiesPage() {
+  const { user } = useAppStore()
   const [activities, setActivities] = useState<Activity[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
@@ -34,11 +36,13 @@ export default function ActivitiesPage() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
-  useEffect(() => { loadActivities() }, [])
+  useEffect(() => { loadActivities() }, [])  // eslint-disable-line react-hooks/exhaustive-deps
 
   async function loadActivities() {
     const supabase = createClient()
-    const { data } = await supabase.from('uco_activities').select('*').order('activity_date', { ascending: false })
+    let q = supabase.from('uco_activities').select('*').order('activity_date', { ascending: false })
+    if (user?.club_id) q = q.eq('club_id', user.club_id)
+    const { data } = await q
     setActivities(data || [])
     setLoading(false)
   }
@@ -70,6 +74,7 @@ export default function ActivitiesPage() {
       expected_attendance: editingActivity.expected_attendance ? Number(editingActivity.expected_attendance) : null,
       actual_attendance: editingActivity.actual_attendance ? Number(editingActivity.actual_attendance) : null,
       notes: editingActivity.notes || null,
+      club_id: user?.club_id,
     }
     if (editingActivity.id) {
       await supabase.from('uco_activities').update({ ...payload, updated_at: new Date().toISOString() }).eq('id', editingActivity.id)

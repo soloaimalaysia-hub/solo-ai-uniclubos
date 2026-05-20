@@ -42,16 +42,23 @@ export default function DashboardPage() {
 
   async function loadData() {
     const supabase = createClient()
+    const clubId = user?.club_id
+    const today = new Date().toISOString().split('T')[0]
+
+    const base = (table: string) => {
+      const q = supabase.from(table)
+      return clubId ? q.eq('club_id', clubId) : q
+    }
 
     const [membersRes, activitiesRes, financeRes, announcementsRes, upcomingRes, recentRes] = await Promise.all([
-      supabase.from('uco_members').select('id', { count: 'exact' }).eq('status', 'active').maybeSingle(),
-      supabase.from('uco_activities').select('id', { count: 'exact' }).gte('activity_date', new Date().toISOString().split('T')[0]),
-      supabase.from('uco_finance').select('amount, type'),
-      supabase.from('uco_announcements').select('id', { count: 'exact' }).eq('is_pinned', true),
-      supabase.from('uco_activities').select('id,title,activity_date,location,status')
-        .gte('activity_date', new Date().toISOString().split('T')[0])
+      base('uco_members').select('id', { count: 'exact', head: true }).eq('status', 'active'),
+      base('uco_activities').select('id', { count: 'exact', head: true }).gte('activity_date', today),
+      base('uco_finance').select('amount, type'),
+      base('uco_announcements').select('id', { count: 'exact', head: true }).eq('is_pinned', true),
+      base('uco_activities').select('id,title,activity_date,location,status')
+        .gte('activity_date', today)
         .order('activity_date').limit(5),
-      supabase.from('uco_members').select('id,full_name,role,joined_at')
+      base('uco_members').select('id,full_name,role,joined_at')
         .order('joined_at', { ascending: false }).limit(5),
     ])
 

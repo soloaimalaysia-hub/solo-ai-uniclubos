@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useAppStore } from '@/store/useAppStore'
 import { Plus, X, Save, BookOpen, Star, Trophy } from 'lucide-react'
 
 interface HistoryEntry {
@@ -18,6 +19,7 @@ interface HistoryEntry {
 const CATEGORIES = ['Achievement', 'Event', 'Milestone', 'Championship', 'Annual', 'Formation', 'Other']
 
 export default function HistoryPage() {
+  const { user } = useAppStore()
   const [entries, setEntries] = useState<HistoryEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
@@ -25,11 +27,13 @@ export default function HistoryPage() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
-  useEffect(() => { loadEntries() }, [])
+  useEffect(() => { loadEntries() }, [])  // eslint-disable-line react-hooks/exhaustive-deps
 
   async function loadEntries() {
     const supabase = createClient()
-    const { data } = await supabase.from('uco_history').select('*').order('event_date', { ascending: false })
+    let q = supabase.from('uco_history').select('*').order('event_date', { ascending: false })
+    if (user?.club_id) q = q.eq('club_id', user.club_id)
+    const { data } = await q
     setEntries(data || [])
     setLoading(false)
   }
@@ -46,11 +50,13 @@ export default function HistoryPage() {
     const payload = {
       title: editing.title,
       content: editing.content,
+      description: editing.content,
       event_date: editing.event_date || new Date().toISOString().split('T')[0],
       category: editing.category || 'Achievement',
       is_milestone: editing.is_milestone ?? false,
       media_url: editing.media_url || null,
       recorded_by: editing.recorded_by || null,
+      club_id: user?.club_id,
     }
     if (editing.id) {
       await supabase.from('uco_history').update({ ...payload, updated_at: new Date().toISOString() }).eq('id', editing.id)
