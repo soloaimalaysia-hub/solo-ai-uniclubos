@@ -37,11 +37,11 @@ export default function DashboardPage() {
 
   useEffect(() => {
     loadData()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function loadData() {
     const supabase = createClient()
-    const clubId = user?.club_id
 
     const [membersRes, activitiesRes, financeRes, announcementsRes, upcomingRes, recentRes] = await Promise.all([
       supabase.from('uco_members').select('id', { count: 'exact' }).eq('status', 'active').maybeSingle(),
