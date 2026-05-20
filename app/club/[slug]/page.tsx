@@ -793,10 +793,16 @@ export default function ClubPublicPage() {
         <div className="border-t border-white/10">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-2">
             <p className="text-white/30 text-xs">© {new Date().getFullYear()} {club!.name}. All rights reserved.</p>
-            <a href="https://solo-ai-uniclubos.vercel.app" target="_blank" rel="noopener noreferrer"
-              className="flex items-center gap-1.5 text-white/30 hover:text-white/60 text-xs transition-colors font-medium">
-              Powered by UniClub OS 🔗
-            </a>
+            <div className="flex items-center gap-4">
+              <Link href="/admin-login"
+                className="text-white/20 hover:text-white/50 text-xs transition-colors">
+                Admin Login
+              </Link>
+              <a href="https://solo-ai-uniclubos.vercel.app" target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-white/30 hover:text-white/60 text-xs transition-colors font-medium">
+                Powered by UniClub OS 🔗
+              </a>
+            </div>
           </div>
         </div>
       </footer>
