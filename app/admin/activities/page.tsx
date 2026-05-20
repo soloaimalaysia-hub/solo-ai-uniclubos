@@ -65,6 +65,7 @@ export default function ActivitiesPage() {
     setSaving(true)
     const supabase = createClient()
     const payload = {
+      type: 'general',
       title: editingActivity.title,
       description: editingActivity.description || null,
       activity_date: editingActivity.activity_date || new Date().toISOString().split('T')[0],
