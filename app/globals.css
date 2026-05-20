@@ -1,27 +1,91 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --uco-blue: #1E3A8A;
+  --uco-orange: #F97316;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Inter', sans-serif;
+  background: #F8FAFC;
+  color: #1E293B;
+  -webkit-font-smoothing: antialiased;
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm text-white transition-all;
+    background: #1E3A8A;
+  }
+  .btn-primary:hover {
+    background: #1e2f6b;
+    @apply shadow-lg -translate-y-0.5;
+  }
+
+  .btn-orange {
+    @apply inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm text-white transition-all;
+    background: #F97316;
+  }
+  .btn-orange:hover {
+    background: #EA580C;
+    @apply shadow-lg -translate-y-0.5;
+  }
+
+  .btn-outline {
+    @apply inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm border-2 transition-all;
+    border-color: #1E3A8A;
+    color: #1E3A8A;
+  }
+  .btn-outline:hover {
+    background: #1E3A8A;
+    @apply text-white;
+  }
+
+  .card {
+    @apply bg-white rounded-2xl p-5 shadow-sm border border-uco-border;
+  }
+
+  .input {
+    @apply w-full px-4 py-2.5 rounded-xl border border-uco-border bg-white text-uco-text text-sm outline-none transition-all;
+  }
+  .input:focus {
+    border-color: #1E3A8A;
+    @apply ring-2 ring-blue-900/10;
+  }
+
+  .label {
+    @apply block text-xs font-semibold text-uco-text-muted mb-1 uppercase tracking-wide;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold;
+  }
+  .badge-blue {
+    @apply badge;
+    background: rgba(30,58,138,0.1);
+    color: #1E3A8A;
+  }
+  .badge-orange {
+    @apply badge;
+    background: rgba(249,115,22,0.1);
+    color: #EA580C;
+  }
+  .badge-green {
+    @apply badge;
+    background: rgba(16,185,129,0.1);
+    color: #059669;
+  }
+  .badge-gray {
+    @apply badge;
+    background: #F1F5F9;
+    color: #64748B;
   }
 }
