@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import {
   LayoutDashboard, Users, Calendar, DollarSign,
-  BookOpen, Bell, Settings, LogOut, Menu, X, ChevronRight
+  BookOpen, Bell, Settings, LogOut, Menu, X, ChevronRight, Globe
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useAppStore } from '@/store/useAppStore'
@@ -26,6 +26,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname()
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const [checking, setChecking] = useState(true)
+  const [clubSlug, setClubSlug] = useState<string | null>(null)
 
   useEffect(() => {
     async function checkAuth() {
@@ -47,6 +48,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             ...profile,
             full_name: profile.full_name || profile.name || session.user.email,
           })
+          // Fetch club slug for public page link
+          if (profile.club_id) {
+            const { data: clubData } = await supabase
+              .from('uco_clubs').select('slug').eq('id', profile.club_id).single()
+            if (clubData?.slug) setClubSlug(clubData.slug)
+          }
         } else {
           // Auto-create profile for first-time admin login
           const newProfile = {
@@ -131,8 +138,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         })}
       </nav>
 
-      {/* Logout */}
-      <div className="px-3 py-4 border-t border-white/10">
+      {/* View Public Page + Logout */}
+      <div className="px-3 py-4 border-t border-white/10 space-y-1">
+        {clubSlug && (
+          <a href={`/club/${clubSlug}`} target="_blank" rel="noopener noreferrer"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-blue-200 hover:text-white hover:bg-white/10 w-full transition-colors">
+            <Globe size={17} />
+            View Public Page
+          </a>
+        )}
         <button onClick={handleLogout}
           className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-blue-200 hover:text-red-300 hover:bg-red-400/10 w-full transition-colors">
           <LogOut size={17} />
