@@ -3,7 +3,17 @@
 import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAppStore } from '@/store/useAppStore'
-import { Save, Settings, Building2, User, Shield, Globe, Link, Copy, Check, Upload, Instagram, Facebook, ExternalLink } from 'lucide-react'
+import { Save, Settings, Building2, User, Shield, Globe, Link, Copy, Check, Upload, ExternalLink } from 'lucide-react'
+
+function IgIcon() {
+  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+}
+function FbIcon() {
+  return <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+}
+function TikTokIcon() {
+  return <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.94a8.17 8.17 0 004.78 1.52V7.01a4.85 4.85 0 01-1.01-.32z"/></svg>
+}
 
 interface Club {
   id: string
@@ -318,26 +328,24 @@ export default function SettingsPage() {
               <label className="label flex items-center gap-1.5 mb-3">Social Links</label>
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(225,48,108,0.1)' }}>
-                    <Instagram size={16} style={{ color: '#E1306C' }} />
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(225,48,108,0.1)', color: '#E1306C' }}>
+                    <IgIcon />
                   </div>
                   <input className="input flex-1" placeholder="https://instagram.com/yourclub"
                     value={club.instagram_url || ''}
                     onChange={e => setClub(prev => ({ ...prev, instagram_url: e.target.value }))} />
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(24,119,242,0.1)' }}>
-                    <Facebook size={16} style={{ color: '#1877F2' }} />
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(24,119,242,0.1)', color: '#1877F2' }}>
+                    <FbIcon />
                   </div>
                   <input className="input flex-1" placeholder="https://facebook.com/yourclub"
                     value={club.facebook_url || ''}
                     onChange={e => setClub(prev => ({ ...prev, facebook_url: e.target.value }))} />
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(0,0,0,0.06)' }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style={{ color: '#000' }}>
-                      <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.94a8.17 8.17 0 004.78 1.52V7.01a4.85 4.85 0 01-1.01-.32z"/>
-                    </svg>
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(0,0,0,0.06)', color: '#000' }}>
+                    <TikTokIcon />
                   </div>
                   <input className="input flex-1" placeholder="https://tiktok.com/@yourclub"
                     value={club.tiktok_url || ''}

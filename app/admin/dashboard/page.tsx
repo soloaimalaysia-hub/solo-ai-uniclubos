@@ -45,9 +45,11 @@ export default function DashboardPage() {
     const clubId = user?.club_id
     const today = new Date().toISOString().split('T')[0]
 
-    const base = (table: string) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const base = (table: string): any => {
       const q = supabase.from(table)
-      return clubId ? q.eq('club_id', clubId) : q
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return clubId ? (q as any).eq('club_id', clubId) : q
     }
 
     const [membersRes, activitiesRes, financeRes, announcementsRes, upcomingRes, recentRes] = await Promise.all([
@@ -63,8 +65,8 @@ export default function DashboardPage() {
     ])
 
     // Calculate balance
-    const transactions = financeRes.data || []
-    const balance = transactions.reduce((sum, t) => {
+    const transactions: { type: string; amount: number }[] = financeRes.data || []
+    const balance = transactions.reduce((sum: number, t) => {
       return sum + (t.type === 'income' ? Number(t.amount) : -Number(t.amount))
     }, 0)
 
