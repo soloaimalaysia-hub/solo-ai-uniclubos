@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAppStore } from '@/store/useAppStore'
-import { Plus, X, Save, BookOpen, Star, Trophy } from 'lucide-react'
+import { Plus, X, Save, BookOpen, Star, Trophy, Image as ImageIcon, Play } from 'lucide-react'
+import { PhotoUpload, VideoLinks } from '@/components/MediaUpload'
 
 interface HistoryEntry {
   id: string
@@ -14,6 +15,9 @@ interface HistoryEntry {
   is_milestone: boolean
   media_url: string | null
   recorded_by: string | null
+  photos: string[]
+  video_links: string[]
+  cover_photo: string | null
 }
 
 const CATEGORIES = ['Achievement', 'Event', 'Milestone', 'Championship', 'Annual', 'Formation', 'Other']
@@ -28,20 +32,37 @@ export default function HistoryPage() {
   const [saved, setSaved] = useState(false)
   const [saveError, setSaveError] = useState('')
 
-  useEffect(() => { loadEntries() }, [])  // eslint-disable-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { loadEntries() }, [])
 
   async function loadEntries() {
     const supabase = createClient()
     let q = supabase.from('uco_history').select('*').order('event_date', { ascending: false })
     if (user?.club_id) q = q.eq('club_id', user.club_id)
     const { data } = await q
-    setEntries(data || [])
+    setEntries((data || []).map(e => ({
+      ...e,
+      photos: e.photos || [],
+      video_links: e.video_links || [],
+    })))
     setLoading(false)
   }
 
   function openAdd() {
-    setEditing({ category: 'Achievement', is_milestone: false, event_date: new Date().toISOString().split('T')[0] })
+    setEditing({
+      category: 'Achievement',
+      is_milestone: false,
+      event_date: new Date().toISOString().split('T')[0],
+      photos: [],
+      video_links: [],
+    })
     setShowModal(true)
+    setSaveError('')
+  }
+
+  // Generate storage path for this entry
+  function storagePath(entryId?: string) {
+    return `history/${user?.club_id || 'unknown'}/${entryId || `new_${Date.now()}`}`
   }
 
   async function saveEntry() {
@@ -57,7 +78,10 @@ export default function HistoryPage() {
       event_date: editing.event_date || new Date().toISOString().split('T')[0],
       category: editing.category || 'Achievement',
       is_milestone: editing.is_milestone ?? false,
-      media_url: editing.media_url || null,
+      media_url: (editing.photos || [])[0] || editing.media_url || null,
+      cover_photo: (editing.photos || [])[0] || null,
+      photos: editing.photos || [],
+      video_links: editing.video_links || [],
       recorded_by: editing.recorded_by || null,
       club_id: user?.club_id,
     }
@@ -91,7 +115,9 @@ export default function HistoryPage() {
           <h1 className="text-2xl font-black text-uco-text flex items-center gap-2">
             <BookOpen size={22} style={{ color: '#F59E0B' }} /> Club History
           </h1>
-          <p className="text-uco-text-muted text-sm mt-0.5">{entries.length} entries &bull; {entries.filter(e => e.is_milestone).length} milestones</p>
+          <p className="text-uco-text-muted text-sm mt-0.5">
+            {entries.length} entries &bull; {entries.filter(e => e.is_milestone).length} milestones
+          </p>
         </div>
         <button onClick={openAdd} className="btn-primary text-sm">
           <Plus size={16} /> Add Entry
@@ -129,12 +155,42 @@ export default function HistoryPage() {
                             {entry.is_milestone && <Trophy size={14} style={{ color: '#F59E0B' }} />}
                             <h3 className="font-bold text-uco-text">{entry.title}</h3>
                             <span className="badge-blue text-xs">{entry.category}</span>
-                            {entry.is_milestone && <span className="badge text-xs" style={{ background: 'rgba(245,158,11,0.1)', color: '#B45309' }}>Milestone</span>}
+                            {entry.is_milestone && (
+                              <span className="badge text-xs" style={{ background: 'rgba(245,158,11,0.1)', color: '#B45309' }}>Milestone</span>
+                            )}
                           </div>
-                          <p className="text-xs text-uco-text-muted mb-2">{formatDate(entry.event_date)}{entry.recorded_by ? ` • By ${entry.recorded_by}` : ''}</p>
+                          <p className="text-xs text-uco-text-muted mb-2">
+                            {formatDate(entry.event_date)}{entry.recorded_by ? ` • By ${entry.recorded_by}` : ''}
+                          </p>
                           <p className="text-sm text-uco-text-muted leading-relaxed">{entry.content}</p>
+
+                          {/* Media preview */}
+                          {(entry.photos?.length > 0 || entry.video_links?.length > 0) && (
+                            <div className="mt-3 flex items-center gap-2 flex-wrap">
+                              {/* First photo thumb */}
+                              {entry.photos?.length > 0 && (
+                                <div className="flex items-center gap-1.5">
+                                  <div className="w-10 h-10 rounded-lg overflow-hidden border border-uco-border">
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img src={entry.photos[0]} alt="" className="w-full h-full object-cover" />
+                                  </div>
+                                  {entry.photos.length > 1 && (
+                                    <span className="text-xs font-medium text-uco-text-muted flex items-center gap-1">
+                                      <ImageIcon size={11} /> {entry.photos.length} photos
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                              {/* Video links count */}
+                              {entry.video_links?.length > 0 && (
+                                <span className="text-xs font-medium text-uco-text-muted flex items-center gap-1">
+                                  <Play size={11} /> {entry.video_links.length} video{entry.video_links.length > 1 ? 's' : ''}
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
-                        <button onClick={() => { setEditing({ ...entry }); setShowModal(true) }}
+                        <button onClick={() => { setEditing({ ...entry, photos: entry.photos || [], video_links: entry.video_links || [] }); setShowModal(true); setSaveError('') }}
                           className="text-xs font-semibold flex-shrink-0 hover:underline" style={{ color: '#1E3A8A' }}>Edit</button>
                       </div>
                     </div>
@@ -149,12 +205,14 @@ export default function HistoryPage() {
       {/* Modal */}
       {showModal && editing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div className="px-6 py-4 border-b border-uco-border flex items-center justify-between">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="px-6 py-4 border-b border-uco-border flex items-center justify-between sticky top-0 bg-white z-10">
               <h2 className="font-bold text-uco-text">{editing.id ? 'Edit History Entry' : 'Add History Entry'}</h2>
-              <button onClick={() => setShowModal(false)} className="p-1.5 rounded-lg hover:bg-uco-surface text-uco-text-muted"><X size={18} /></button>
+              <button onClick={() => { setShowModal(false); setSaveError('') }}
+                className="p-1.5 rounded-lg hover:bg-uco-surface text-uco-text-muted"><X size={18} /></button>
             </div>
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-5">
+              {/* Basic info */}
               <div>
                 <label className="label">Title *</label>
                 <input className="input" placeholder="e.g. Won MASUM Basketball Gold Medal"
@@ -163,7 +221,7 @@ export default function HistoryPage() {
               </div>
               <div>
                 <label className="label">Story / Description *</label>
-                <textarea className="input min-h-[100px] resize-none" placeholder="Describe this moment in your club history..."
+                <textarea className="input min-h-[100px] resize-none" placeholder="Describe this moment..."
                   value={editing.content || ''}
                   onChange={e => setEditing(prev => ({ ...prev, content: e.target.value }))} />
               </div>
@@ -196,17 +254,45 @@ export default function HistoryPage() {
                   <Star size={14} style={{ color: '#F59E0B' }} /> Mark as Club Milestone
                 </span>
               </label>
+
+              {/* Photos */}
+              <div>
+                <label className="label flex items-center gap-1.5">
+                  <ImageIcon size={14} /> Photos
+                  <span className="text-xs font-normal text-uco-text-muted ml-1">
+                    ({(editing.photos || []).length}/20) · First photo = cover
+                  </span>
+                </label>
+                <PhotoUpload
+                  photos={editing.photos || []}
+                  onChange={urls => setEditing(prev => ({ ...prev, photos: urls }))}
+                  path={storagePath(editing.id)}
+                  maxPhotos={20}
+                />
+              </div>
+
+              {/* Video links */}
+              <div>
+                <label className="label flex items-center gap-1.5">
+                  <Play size={14} /> Video Links
+                  <span className="text-xs font-normal text-uco-text-muted ml-1">YouTube / TikTok</span>
+                </label>
+                <VideoLinks
+                  links={editing.video_links || []}
+                  onChange={links => setEditing(prev => ({ ...prev, video_links: links }))}
+                />
+              </div>
             </div>
-            <div className="px-6 py-4 border-t border-uco-border">
-              {saveError && (
-                <p className="text-red-500 text-xs mb-3 font-medium">⚠️ {saveError}</p>
-              )}
+
+            <div className="px-6 py-4 border-t border-uco-border sticky bottom-0 bg-white">
+              {saveError && <p className="text-red-500 text-xs mb-3 font-medium">⚠️ {saveError}</p>}
               <div className="flex justify-end gap-3">
-                <button onClick={() => { setShowModal(false); setSaveError('') }} className="btn-outline text-sm px-4 py-2">Cancel</button>
+                <button onClick={() => { setShowModal(false); setSaveError('') }}
+                  className="btn-outline text-sm px-4 py-2">Cancel</button>
                 <button onClick={saveEntry} disabled={saving}
                   className="btn-primary text-sm px-5 py-2 disabled:opacity-60">
                   <Save size={14} />
-                  {saving ? 'Saving...' : saved ? 'Saved!' : 'Save Entry'}
+                  {saving ? 'Saving...' : saved ? '✓ Saved!' : 'Save Entry'}
                 </button>
               </div>
             </div>

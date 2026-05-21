@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAppStore } from '@/store/useAppStore'
-import { Plus, X, Save, Calendar, MapPin, Clock, Users } from 'lucide-react'
+import { Plus, X, Save, Calendar, MapPin, Clock, Users, Image as ImageIcon, Play } from 'lucide-react'
+import { PhotoUpload, VideoLinks } from '@/components/MediaUpload'
 
 interface Activity {
   id: string
@@ -16,6 +17,8 @@ interface Activity {
   expected_attendance: number | null
   actual_attendance: number | null
   notes: string | null
+  event_photos: string[]
+  event_video_links: string[]
 }
 
 const STATUSES = ['planned', 'ongoing', 'completed', 'cancelled']
@@ -35,6 +38,7 @@ export default function ActivitiesPage() {
   const [editingActivity, setEditingActivity] = useState<Partial<Activity> | null>(null)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [saveError, setSaveError] = useState('')
 
   useEffect(() => { loadActivities() }, [])  // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -43,7 +47,11 @@ export default function ActivitiesPage() {
     let q = supabase.from('uco_activities').select('*').order('activity_date', { ascending: false })
     if (user?.club_id) q = q.eq('club_id', user.club_id)
     const { data } = await q
-    setActivities(data || [])
+    setActivities((data || []).map(a => ({
+      ...a,
+      event_photos: a.event_photos || [],
+      event_video_links: a.event_video_links || [],
+    })))
     setLoading(false)
   }
 
@@ -51,17 +59,26 @@ export default function ActivitiesPage() {
     setEditingActivity({
       status: 'planned',
       activity_date: new Date().toISOString().split('T')[0],
+      event_photos: [],
+      event_video_links: [],
     })
+    setSaveError('')
     setShowModal(true)
   }
 
   function openEdit(a: Activity) {
-    setEditingActivity({ ...a })
+    setEditingActivity({ ...a, event_photos: a.event_photos || [], event_video_links: a.event_video_links || [] })
+    setSaveError('')
     setShowModal(true)
   }
 
+  function storagePath(activityId?: string) {
+    return `activities/${user?.club_id || 'unknown'}/${activityId || `new_${Date.now()}`}`
+  }
+
   async function saveActivity() {
-    if (!editingActivity?.title) return
+    setSaveError('')
+    if (!editingActivity?.title) { setSaveError('Activity title is required'); return }
     setSaving(true)
     const supabase = createClient()
     const payload = {
@@ -75,6 +92,8 @@ export default function ActivitiesPage() {
       expected_attendance: editingActivity.expected_attendance ? Number(editingActivity.expected_attendance) : null,
       actual_attendance: editingActivity.actual_attendance ? Number(editingActivity.actual_attendance) : null,
       notes: editingActivity.notes || null,
+      event_photos: editingActivity.event_photos || [],
+      event_video_links: editingActivity.event_video_links || [],
       club_id: user?.club_id,
     }
     if (editingActivity.id) {
@@ -87,7 +106,7 @@ export default function ActivitiesPage() {
     setTimeout(() => { setSaved(false); setShowModal(false); loadActivities() }, 1200)
   }
 
-  const upcoming = activities.filter(a => a.activity_date >= new Date().toISOString().split('T')[0] && a.status !== 'cancelled')
+  const upcoming = activities.filter(a => a.activity_date >= new Date().toISOString().split('T')[0] && a.status !== 'cancelled' && a.status !== 'completed')
   const past = activities.filter(a => a.activity_date < new Date().toISOString().split('T')[0] || a.status === 'completed' || a.status === 'cancelled')
 
   function formatDate(d: string) {
@@ -154,15 +173,38 @@ export default function ActivitiesPage() {
               <div className="space-y-2">
                 {past.map(a => (
                   <div key={a.id} className="bg-white rounded-xl border border-uco-border px-5 py-3.5 flex items-center gap-4 hover:shadow-sm transition-all">
+                    {/* First photo thumb if any */}
+                    {a.event_photos?.length > 0 ? (
+                      <div className="w-12 h-12 rounded-xl overflow-hidden border border-uco-border flex-shrink-0">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={a.event_photos[0]} alt="" className="w-full h-full object-cover" />
+                      </div>
+                    ) : (
+                      <div className="w-12 h-12 rounded-xl bg-uco-surface border border-uco-border flex items-center justify-center flex-shrink-0">
+                        <Calendar size={18} className="text-uco-border" />
+                      </div>
+                    )}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <p className="font-semibold text-sm text-uco-text truncate">{a.title}</p>
                         <span className={statusColor(a.status)}>{a.status}</span>
                       </div>
-                      <p className="text-xs text-uco-text-muted mt-0.5 flex items-center gap-1">
-                        <Clock size={10} />{formatDate(a.activity_date)}
-                        {a.actual_attendance && <span className="ml-2">• {a.actual_attendance} attended</span>}
-                      </p>
+                      <div className="flex items-center gap-3 mt-0.5">
+                        <p className="text-xs text-uco-text-muted flex items-center gap-1">
+                          <Clock size={10} />{formatDate(a.activity_date)}
+                          {a.actual_attendance && <span className="ml-2">• {a.actual_attendance} attended</span>}
+                        </p>
+                        {a.event_photos?.length > 0 && (
+                          <span className="text-xs text-uco-text-muted flex items-center gap-1">
+                            <ImageIcon size={10} /> {a.event_photos.length}
+                          </span>
+                        )}
+                        {a.event_video_links?.length > 0 && (
+                          <span className="text-xs text-uco-text-muted flex items-center gap-1">
+                            <Play size={10} /> {a.event_video_links.length}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <button onClick={() => openEdit(a)}
                       className="text-xs font-semibold flex-shrink-0 hover:underline" style={{ color: '#1E3A8A' }}>Edit</button>
@@ -177,8 +219,8 @@ export default function ActivitiesPage() {
       {/* Modal */}
       {showModal && editingActivity && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div className="px-6 py-4 border-b border-uco-border flex items-center justify-between">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="px-6 py-4 border-b border-uco-border flex items-center justify-between sticky top-0 bg-white z-10">
               <h2 className="font-bold text-uco-text">{editingActivity.id ? 'Edit Activity' : 'New Activity'}</h2>
               <button onClick={() => setShowModal(false)} className="p-1.5 rounded-lg hover:bg-uco-surface text-uco-text-muted">
                 <X size={18} />
@@ -242,14 +284,55 @@ export default function ActivitiesPage() {
                   value={editingActivity.notes || ''}
                   onChange={e => setEditingActivity(prev => ({ ...prev, notes: e.target.value }))} />
               </div>
+
+              {/* ── Event Media ── */}
+              <div className="border-t border-uco-border pt-4 space-y-5">
+                <div className="flex items-center gap-2">
+                  <ImageIcon size={15} style={{ color: '#F97316' }} />
+                  <h3 className="font-bold text-sm text-uco-text">Event Media</h3>
+                  <span className="text-xs text-uco-text-muted">· Photos &amp; videos from this event</span>
+                </div>
+
+                {/* Photos */}
+                <div>
+                  <label className="label flex items-center gap-1.5">
+                    <ImageIcon size={13} /> Photos
+                    <span className="text-xs font-normal text-uco-text-muted ml-1">
+                      ({(editingActivity.event_photos || []).length}/20)
+                    </span>
+                  </label>
+                  <PhotoUpload
+                    photos={editingActivity.event_photos || []}
+                    onChange={urls => setEditingActivity(prev => ({ ...prev, event_photos: urls }))}
+                    path={storagePath(editingActivity.id)}
+                    maxPhotos={20}
+                  />
+                </div>
+
+                {/* Video links */}
+                <div>
+                  <label className="label flex items-center gap-1.5">
+                    <Play size={13} /> Video Links
+                    <span className="text-xs font-normal text-uco-text-muted ml-1">YouTube / TikTok</span>
+                  </label>
+                  <VideoLinks
+                    links={editingActivity.event_video_links || []}
+                    onChange={links => setEditingActivity(prev => ({ ...prev, event_video_links: links }))}
+                  />
+                </div>
+              </div>
             </div>
-            <div className="px-6 py-4 border-t border-uco-border flex justify-end gap-3">
-              <button onClick={() => setShowModal(false)} className="btn-outline text-sm px-4 py-2">Cancel</button>
-              <button onClick={saveActivity} disabled={saving}
-                className="btn-primary text-sm px-5 py-2 disabled:opacity-60">
-                <Save size={14} />
-                {saving ? 'Saving...' : saved ? 'Saved!' : 'Save Activity'}
-              </button>
+
+            <div className="px-6 py-4 border-t border-uco-border sticky bottom-0 bg-white">
+              {saveError && <p className="text-red-500 text-xs mb-3 font-medium">⚠️ {saveError}</p>}
+              <div className="flex justify-end gap-3">
+                <button onClick={() => setShowModal(false)} className="btn-outline text-sm px-4 py-2">Cancel</button>
+                <button onClick={saveActivity} disabled={saving}
+                  className="btn-primary text-sm px-5 py-2 disabled:opacity-60">
+                  <Save size={14} />
+                  {saving ? 'Saving...' : saved ? '✓ Saved!' : 'Save Activity'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

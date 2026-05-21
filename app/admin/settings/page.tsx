@@ -3,7 +3,8 @@
 import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAppStore } from '@/store/useAppStore'
-import { Save, Settings, Building2, User, Shield, Globe, Link, Copy, Check, Upload, ExternalLink } from 'lucide-react'
+import { Save, Settings, Building2, User, Shield, Globe, Link, Copy, Check, Upload, ExternalLink, Image as ImageIcon, Loader2 } from 'lucide-react'
+import { PhotoUpload } from '@/components/MediaUpload'
 
 function IgIcon() {
   return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
@@ -27,6 +28,8 @@ interface Club {
   status: string
   slug: string | null
   cover_image_url: string | null
+  logo_url: string | null
+  gallery_photos: string[]
   instagram_url: string | null
   facebook_url: string | null
   tiktok_url: string | null
@@ -38,15 +41,19 @@ interface Club {
 
 export default function SettingsPage() {
   const { user } = useAppStore()
-  const [club, setClub] = useState<Partial<Club>>({})
+  const [club, setClub] = useState<Partial<Club>>({ gallery_photos: [] })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [activeTab, setActiveTab] = useState<'club' | 'public' | 'profile'>('club')
   const [slugError, setSlugError] = useState('')
   const [copied, setCopied] = useState(false)
-  const [uploading, setUploading] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Single-image upload states
+  const [uploadingCover, setUploadingCover] = useState(false)
+  const [uploadingLogo, setUploadingLogo] = useState(false)
+  const coverInputRef = useRef<HTMLInputElement>(null)
+  const logoInputRef = useRef<HTMLInputElement>(null)
 
   // Profile fields
   const [fullName, setFullName] = useState(user?.full_name || '')
@@ -62,8 +69,8 @@ export default function SettingsPage() {
     let q = supabase.from('uco_clubs').select('*')
     if (user?.club_id) q = q.eq('id', user.club_id)
     const { data } = await q.limit(1).single()
-    if (data) setClub(data)
-    else setClub({ status: 'active', show_activities: true, show_member_count: true, show_gallery: true, allow_join_applications: true })
+    if (data) setClub({ ...data, gallery_photos: data.gallery_photos || [] })
+    else setClub({ status: 'active', show_activities: true, show_member_count: true, show_gallery: true, allow_join_applications: true, gallery_photos: [] })
     setLoading(false)
   }
 
@@ -76,15 +83,22 @@ export default function SettingsPage() {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  async function uploadCover(file: File) {
+  // Upload a single image (cover or logo) to uco-media bucket
+  async function uploadSingleImage(
+    file: File,
+    folder: 'covers' | 'logos',
+    setUploading: (v: boolean) => void,
+    field: 'cover_image_url' | 'logo_url'
+  ) {
     setUploading(true)
     const supabase = createClient()
     const ext = file.name.split('.').pop()
-    const path = `covers/${club.id || 'new'}_${Date.now()}.${ext}`
-    const { error } = await supabase.storage.from('uco-club-assets').upload(path, file, { upsert: true })
+    const clubId = club.id || 'new'
+    const path = `${folder}/${clubId}/${folder}_${Date.now()}.${ext}`
+    const { error } = await supabase.storage.from('uco-media').upload(path, file, { upsert: true })
     if (!error) {
-      const { data: urlData } = supabase.storage.from('uco-club-assets').getPublicUrl(path)
-      setClub(prev => ({ ...prev, cover_image_url: urlData.publicUrl }))
+      const { data: urlData } = supabase.storage.from('uco-media').getPublicUrl(path)
+      setClub(prev => ({ ...prev, [field]: urlData.publicUrl }))
     }
     setUploading(false)
   }
@@ -93,7 +107,6 @@ export default function SettingsPage() {
     if (!club.name) return
     setSlugError('')
 
-    // Validate slug format
     if (club.slug && !/^[a-z0-9-]+$/.test(club.slug)) {
       setSlugError('Slug can only contain lowercase letters, numbers, and hyphens')
       return
@@ -112,6 +125,8 @@ export default function SettingsPage() {
       status: club.status || 'active',
       slug: club.slug || null,
       cover_image_url: club.cover_image_url || null,
+      logo_url: club.logo_url || null,
+      gallery_photos: club.gallery_photos || [],
       instagram_url: club.instagram_url || null,
       facebook_url: club.facebook_url || null,
       tiktok_url: club.tiktok_url || null,
@@ -131,7 +146,7 @@ export default function SettingsPage() {
       }
     } else {
       const { data } = await supabase.from('uco_clubs').insert(payload).select().single()
-      if (data) setClub(data)
+      if (data) setClub({ ...data, gallery_photos: data.gallery_photos || [] })
     }
     setSaving(false)
     setSaved(true)
@@ -176,77 +191,79 @@ export default function SettingsPage() {
 
       {/* ─── Club Profile Tab ─── */}
       {activeTab === 'club' && (
-        <div className="bg-white rounded-2xl border border-uco-border p-6">
-          <div className="flex items-center gap-2 mb-5">
-            <Building2 size={18} style={{ color: '#1E3A8A' }} />
-            <h2 className="font-bold text-uco-text">Club Information</h2>
-          </div>
-          {loading ? (
-            <p className="text-sm text-uco-text-muted">Loading...</p>
-          ) : (
-            <div className="space-y-4">
-              <div>
-                <label className="label">Club Name *</label>
-                <input className="input" placeholder="USJ Basketball Club"
-                  value={club.name || ''}
-                  onChange={e => setClub(prev => ({ ...prev, name: e.target.value }))} />
-              </div>
-              <div>
-                <label className="label">Description</label>
-                <textarea className="input min-h-[80px] resize-none" placeholder="Brief description of your club..."
-                  value={club.description || ''}
-                  onChange={e => setClub(prev => ({ ...prev, description: e.target.value }))} />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="label">Founded Year</label>
-                  <input className="input" type="number" placeholder="2010"
-                    value={club.founded_year || ''}
-                    onChange={e => setClub(prev => ({ ...prev, founded_year: Number(e.target.value) }))} />
-                </div>
-                <div>
-                  <label className="label">Faculty / Department</label>
-                  <input className="input" placeholder="Faculty of Engineering"
-                    value={club.faculty || ''}
-                    onChange={e => setClub(prev => ({ ...prev, faculty: e.target.value }))} />
-                </div>
-                <div>
-                  <label className="label">Contact Email</label>
-                  <input className="input" type="email" placeholder="club@university.edu.my"
-                    value={club.contact_email || ''}
-                    onChange={e => setClub(prev => ({ ...prev, contact_email: e.target.value }))} />
-                </div>
-                <div>
-                  <label className="label">Contact Phone</label>
-                  <input className="input" placeholder="+60 12-345 6789"
-                    value={club.contact_phone || ''}
-                    onChange={e => setClub(prev => ({ ...prev, contact_phone: e.target.value }))} />
-                </div>
-                <div>
-                  <label className="label">Max Members</label>
-                  <input className="input" type="number" placeholder="50"
-                    value={club.max_members || ''}
-                    onChange={e => setClub(prev => ({ ...prev, max_members: Number(e.target.value) }))} />
-                </div>
-                <div>
-                  <label className="label">Status</label>
-                  <select className="input" value={club.status || 'active'}
-                    onChange={e => setClub(prev => ({ ...prev, status: e.target.value }))}>
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                    <option value="suspended">Suspended</option>
-                  </select>
-                </div>
-              </div>
-              <div className="pt-2">
-                <button onClick={saveClub} disabled={saving}
-                  className="btn-primary text-sm disabled:opacity-60">
-                  <Save size={14} />
-                  {saving ? 'Saving...' : saved ? '✓ Saved!' : 'Save Club Profile'}
-                </button>
-              </div>
+        <div className="space-y-5">
+          <div className="bg-white rounded-2xl border border-uco-border p-6">
+            <div className="flex items-center gap-2 mb-5">
+              <Building2 size={18} style={{ color: '#1E3A8A' }} />
+              <h2 className="font-bold text-uco-text">Club Information</h2>
             </div>
-          )}
+            {loading ? (
+              <p className="text-sm text-uco-text-muted">Loading...</p>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <label className="label">Club Name *</label>
+                  <input className="input" placeholder="USJ Basketball Club"
+                    value={club.name || ''}
+                    onChange={e => setClub(prev => ({ ...prev, name: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="label">Description</label>
+                  <textarea className="input min-h-[80px] resize-none" placeholder="Brief description of your club..."
+                    value={club.description || ''}
+                    onChange={e => setClub(prev => ({ ...prev, description: e.target.value }))} />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="label">Founded Year</label>
+                    <input className="input" type="number" placeholder="2010"
+                      value={club.founded_year || ''}
+                      onChange={e => setClub(prev => ({ ...prev, founded_year: Number(e.target.value) }))} />
+                  </div>
+                  <div>
+                    <label className="label">Faculty / Department</label>
+                    <input className="input" placeholder="Faculty of Engineering"
+                      value={club.faculty || ''}
+                      onChange={e => setClub(prev => ({ ...prev, faculty: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label className="label">Contact Email</label>
+                    <input className="input" type="email" placeholder="club@university.edu.my"
+                      value={club.contact_email || ''}
+                      onChange={e => setClub(prev => ({ ...prev, contact_email: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label className="label">Contact Phone</label>
+                    <input className="input" placeholder="+60 12-345 6789"
+                      value={club.contact_phone || ''}
+                      onChange={e => setClub(prev => ({ ...prev, contact_phone: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label className="label">Max Members</label>
+                    <input className="input" type="number" placeholder="50"
+                      value={club.max_members || ''}
+                      onChange={e => setClub(prev => ({ ...prev, max_members: Number(e.target.value) }))} />
+                  </div>
+                  <div>
+                    <label className="label">Status</label>
+                    <select className="input" value={club.status || 'active'}
+                      onChange={e => setClub(prev => ({ ...prev, status: e.target.value }))}>
+                      <option value="active">Active</option>
+                      <option value="inactive">Inactive</option>
+                      <option value="suspended">Suspended</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="pt-2">
+                  <button onClick={saveClub} disabled={saving}
+                    className="btn-primary text-sm disabled:opacity-60">
+                    <Save size={14} />
+                    {saving ? 'Saving...' : saved ? '✓ Saved!' : 'Save Club Profile'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -283,7 +300,7 @@ export default function SettingsPage() {
             )}
           </div>
 
-          {/* Slug + Cover + Social */}
+          {/* Slug + Social */}
           <div className="bg-white rounded-2xl border border-uco-border p-6 space-y-5">
             <div className="flex items-center gap-2 mb-1">
               <Link size={18} style={{ color: '#1E3A8A' }} />
@@ -301,26 +318,6 @@ export default function SettingsPage() {
               </div>
               {slugError && <p className="text-xs text-red-500 mt-1">{slugError}</p>}
               <p className="text-xs text-uco-text-muted mt-1">Lowercase letters, numbers and hyphens only</p>
-            </div>
-
-            {/* Cover Image */}
-            <div>
-              <label className="label">Cover Image</label>
-              {club.cover_image_url && (
-                <div className="mb-2 rounded-xl overflow-hidden border border-uco-border h-32 bg-uco-surface">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={club.cover_image_url} alt="Cover" className="w-full h-full object-cover" />
-                </div>
-              )}
-              <input ref={fileInputRef} type="file" accept="image/*" className="hidden"
-                onChange={e => { const f = e.target.files?.[0]; if (f) uploadCover(f) }} />
-              <button onClick={() => fileInputRef.current?.click()} disabled={uploading}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl border border-uco-border text-sm font-semibold hover:bg-uco-surface transition-colors disabled:opacity-60"
-                style={{ color: '#1E3A8A' }}>
-                <Upload size={14} />
-                {uploading ? 'Uploading...' : club.cover_image_url ? 'Change Cover' : 'Upload Cover Image'}
-              </button>
-              <p className="text-xs text-uco-text-muted mt-1">Recommended: 1200×400px, JPG or PNG</p>
             </div>
 
             {/* Social Links */}
@@ -352,6 +349,79 @@ export default function SettingsPage() {
                     onChange={e => setClub(prev => ({ ...prev, tiktok_url: e.target.value }))} />
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* ── Club Media ── */}
+          <div className="bg-white rounded-2xl border border-uco-border p-6 space-y-6">
+            <div className="flex items-center gap-2">
+              <ImageIcon size={18} style={{ color: '#1E3A8A' }} />
+              <h2 className="font-bold text-uco-text">Club Media</h2>
+            </div>
+
+            {/* Cover Image */}
+            <div>
+              <label className="label">Cover Photo</label>
+              <p className="text-xs text-uco-text-muted mb-2">Hero banner on your public page. Recommended: 1200×400px</p>
+              {club.cover_image_url && (
+                <div className="mb-3 rounded-xl overflow-hidden border border-uco-border h-36 bg-uco-surface relative group">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={club.cover_image_url} alt="Cover" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all" />
+                </div>
+              )}
+              <input ref={coverInputRef} type="file" accept="image/*" className="hidden"
+                onChange={e => { const f = e.target.files?.[0]; if (f) uploadSingleImage(f, 'covers', setUploadingCover, 'cover_image_url'); e.currentTarget.value = '' }} />
+              <button onClick={() => coverInputRef.current?.click()} disabled={uploadingCover}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl border border-uco-border text-sm font-semibold hover:bg-uco-surface transition-colors disabled:opacity-60"
+                style={{ color: '#1E3A8A' }}>
+                {uploadingCover ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+                {uploadingCover ? 'Uploading...' : club.cover_image_url ? 'Change Cover Photo' : 'Upload Cover Photo'}
+              </button>
+            </div>
+
+            {/* Logo */}
+            <div>
+              <label className="label">Club Logo</label>
+              <p className="text-xs text-uco-text-muted mb-2">Displayed in the club header. Recommended: 200×200px, PNG with transparent background</p>
+              <div className="flex items-center gap-4">
+                {club.logo_url ? (
+                  <div className="w-20 h-20 rounded-2xl overflow-hidden border border-uco-border bg-uco-surface flex-shrink-0">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={club.logo_url} alt="Logo" className="w-full h-full object-contain p-1" />
+                  </div>
+                ) : (
+                  <div className="w-20 h-20 rounded-2xl border-2 border-dashed border-uco-border bg-uco-surface flex items-center justify-center flex-shrink-0">
+                    <ImageIcon size={24} className="text-uco-border" />
+                  </div>
+                )}
+                <div>
+                  <input ref={logoInputRef} type="file" accept="image/*" className="hidden"
+                    onChange={e => { const f = e.target.files?.[0]; if (f) uploadSingleImage(f, 'logos', setUploadingLogo, 'logo_url'); e.currentTarget.value = '' }} />
+                  <button onClick={() => logoInputRef.current?.click()} disabled={uploadingLogo}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl border border-uco-border text-sm font-semibold hover:bg-uco-surface transition-colors disabled:opacity-60"
+                    style={{ color: '#1E3A8A' }}>
+                    {uploadingLogo ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+                    {uploadingLogo ? 'Uploading...' : club.logo_url ? 'Change Logo' : 'Upload Logo'}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Gallery */}
+            <div>
+              <label className="label flex items-center gap-1.5">
+                Club Gallery
+                <span className="text-xs font-normal text-uco-text-muted ml-1">
+                  ({(club.gallery_photos || []).length}/30 photos) · Shown on public page gallery section
+                </span>
+              </label>
+              <PhotoUpload
+                photos={club.gallery_photos || []}
+                onChange={urls => setClub(prev => ({ ...prev, gallery_photos: urls }))}
+                path={`gallery/${club.id || 'new'}`}
+                maxPhotos={30}
+              />
             </div>
           </div>
 

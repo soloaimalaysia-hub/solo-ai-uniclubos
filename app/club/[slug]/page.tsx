@@ -64,6 +64,7 @@ interface Club {
   instagram_url: string | null
   facebook_url: string | null
   tiktok_url: string | null
+  gallery_photos: string[]
   show_activities: boolean
   show_member_count: boolean
   show_gallery: boolean
@@ -86,10 +87,10 @@ interface Achievement {
   category: string
   is_milestone: boolean
 }
-interface GalleryItem {
+interface VideoHighlight {
   id: string
   title: string
-  media_url: string
+  video_links: string[]
   event_date: string
 }
 interface JoinForm {
@@ -98,6 +99,12 @@ interface JoinForm {
   email: string
   phone: string
   motivation: string
+}
+
+// YouTube embed helper
+function getYouTubeId(url: string): string | null {
+  const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([A-Za-z0-9_-]{11})/)
+  return m ? m[1] : null
 }
 
 const CATEGORY_EMOJI: Record<string, string> = {
@@ -112,11 +119,9 @@ export default function ClubPublicPage() {
   const [club, setClub] = useState<Club | null>(null)
   const [activities, setActivities] = useState<Activity[]>([])
   const [achievements, setAchievements] = useState<Achievement[]>([])
-  const [gallery, setGallery] = useState<GalleryItem[]>([])
   const [memberCount, setMemberCount] = useState(0)
   const [activityCount, setActivityCount] = useState(0)
   const [achievementCount, setAchievementCount] = useState(0)
-  const [galleryCount, setGalleryCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
 
@@ -125,8 +130,11 @@ export default function ClubPublicPage() {
   const [joining, setJoining] = useState(false)
   const [joinDone, setJoinDone] = useState(false)
 
-  // Lightbox
-  const [lightbox, setLightbox] = useState<GalleryItem | null>(null)
+  // Video highlights
+  const [videoHighlights, setVideoHighlights] = useState<VideoHighlight[]>([])
+
+  // Lightbox (URL string)
+  const [lightbox, setLightbox] = useState<string | null>(null)
 
   // Refs for scroll
   const aboutRef = useRef<HTMLDivElement>(null)
@@ -141,31 +149,32 @@ export default function ClubPublicPage() {
     const supabase = createClient()
     const { data: clubData } = await supabase.from('uco_clubs').select('*').eq('slug', slug).single()
     if (!clubData) { setNotFound(true); setLoading(false); return }
-    setClub(clubData)
+    setClub({ ...clubData, gallery_photos: clubData.gallery_photos || [] })
     const clubId = clubData.id
     const today = new Date().toISOString().split('T')[0]
     const thisYear = new Date().getFullYear().toString()
 
-    const [membersRes, activitiesRes, achieveRes, galleryRes, upcomingRes, achieveListRes, galleryListRes] = await Promise.all([
+    const [membersRes, activitiesRes, achieveRes, upcomingRes, achieveListRes, videoRes] = await Promise.all([
       supabase.from('uco_members').select('id', { count: 'exact', head: true }).eq('club_id', clubId).eq('status', 'active'),
       supabase.from('uco_activities').select('id', { count: 'exact', head: true }).eq('club_id', clubId).gte('activity_date', thisYear + '-01-01'),
       supabase.from('uco_history').select('id', { count: 'exact', head: true }).eq('club_id', clubId).in('category', ['Achievement', 'Championship', 'Award']),
-      supabase.from('uco_history').select('id', { count: 'exact', head: true }).eq('club_id', clubId).not('media_url', 'is', null),
       supabase.from('uco_activities').select('id,title,activity_date,end_date,location,description,expected_attendance')
         .eq('club_id', clubId).gte('activity_date', today).neq('status', 'cancelled').order('activity_date').limit(3),
       supabase.from('uco_history').select('id,title,content,event_date,category,is_milestone')
         .eq('club_id', clubId).in('category', ['Achievement', 'Championship', 'Award', 'Milestone']).order('event_date', { ascending: false }).limit(8),
-      supabase.from('uco_history').select('id,title,media_url,event_date')
-        .eq('club_id', clubId).not('media_url', 'is', null).order('event_date', { ascending: false }).limit(12),
+      supabase.from('uco_history').select('id,title,video_links,event_date')
+        .eq('club_id', clubId).order('event_date', { ascending: false }).limit(20),
     ])
 
     setMemberCount(membersRes.count || 0)
     setActivityCount(activitiesRes.count || 0)
     setAchievementCount(achieveRes.count || 0)
-    setGalleryCount(galleryRes.count || 0)
     setActivities(upcomingRes.data || [])
     setAchievements(achieveListRes.data || [])
-    setGallery((galleryListRes.data || []).filter((g): g is GalleryItem => !!g.media_url))
+    // Only entries that actually have video_links
+    setVideoHighlights(
+      (videoRes.data || []).filter(v => v.video_links && v.video_links.length > 0) as VideoHighlight[]
+    )
     setLoading(false)
   }
 
@@ -352,7 +361,7 @@ export default function ClubPublicPage() {
               { icon: <Users size={22} />, value: club!.show_member_count ? memberCount : '—', label: 'Active Members' },
               { icon: <Calendar size={22} />, value: activityCount, label: 'Events This Year' },
               { icon: <Trophy size={22} />, value: achievementCount, label: 'Achievements' },
-              { icon: <Camera size={22} />, value: galleryCount, label: 'Memories' },
+              { icon: <Camera size={22} />, value: (club!.gallery_photos || []).length, label: 'Gallery Photos' },
             ].map((stat, i) => (
               <div key={i} className="flex flex-col items-center py-8 px-4 text-center">
                 <div className="mb-2" style={{ color: '#F97316' }}>{stat.icon}</div>
@@ -392,7 +401,7 @@ export default function ClubPublicPage() {
                     <Calendar size={14} /> Activities
                   </button>
                 )}
-                {club!.show_gallery && (gallery.length > 0) && (
+                {club!.show_gallery && ((club!.gallery_photos || []).length > 0) && (
                   <button onClick={() => scrollTo(galleryRef)}
                     className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold border-2 hover:bg-blue-50 transition-all"
                     style={{ borderColor: '#1E3A8A', color: '#1E3A8A' }}>
@@ -570,7 +579,7 @@ export default function ClubPublicPage() {
               </div>
             </div>
 
-            {gallery.length === 0 ? (
+            {(club!.gallery_photos || []).length === 0 ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {Array.from({ length: 6 }).map((_, i) => (
                   <div key={i} className="aspect-square rounded-2xl flex items-center justify-center" style={{ background: '#F1F5F9' }}>
@@ -583,15 +592,13 @@ export default function ClubPublicPage() {
               </div>
             ) : (
               <div className="columns-2 sm:columns-3 gap-3 space-y-3">
-                {gallery.map((item) => (
-                  <div key={item.id}
+                {(club!.gallery_photos || []).map((url, i) => (
+                  <div key={i}
                     className="break-inside-avoid rounded-2xl overflow-hidden cursor-pointer relative group"
-                    onClick={() => setLightbox(item)}>
+                    onClick={() => setLightbox(url)}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={item.media_url} alt={item.title} className="w-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all flex items-end p-3 opacity-0 group-hover:opacity-100">
-                      <p className="text-white text-xs font-bold leading-tight">{item.title}</p>
-                    </div>
+                    <img src={url} alt={`Gallery photo ${i + 1}`} className="w-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all opacity-0 group-hover:opacity-100" />
                   </div>
                 ))}
               </div>
@@ -606,12 +613,55 @@ export default function ClubPublicPage() {
               </button>
               <div className="max-w-4xl w-full" onClick={e => e.stopPropagation()}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={lightbox.media_url} alt={lightbox.title} className="w-full max-h-[80vh] object-contain rounded-2xl" />
-                <p className="text-white text-center mt-4 font-semibold">{lightbox.title}</p>
-                <p className="text-white/50 text-center text-sm mt-1">{formatDate(lightbox.event_date)}</p>
+                <img src={lightbox} alt="Gallery photo" className="w-full max-h-[80vh] object-contain rounded-2xl" />
               </div>
             </div>
           )}
+        </section>
+      )}
+
+      {/* ═══════════════════════════════════════════
+          VIDEO HIGHLIGHTS
+      ═══════════════════════════════════════════ */}
+      {videoHighlights.length > 0 && (
+        <section className="py-16 lg:py-24" style={{ background: '#F8FAFC' }}>
+          <div className="max-w-5xl mx-auto px-4 sm:px-6">
+            <div className="mb-10">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-1 h-8 rounded-full" style={{ background: '#F97316' }} />
+                <span className="text-sm font-bold uppercase tracking-widest" style={{ color: '#F97316' }}>Highlights</span>
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-black leading-tight" style={{ color: '#1E3A8A' }}>
+                Video Highlights
+              </h2>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-6">
+              {videoHighlights.flatMap(entry =>
+                entry.video_links.map((url, vi) => {
+                  const ytId = getYouTubeId(url)
+                  if (!ytId) return null
+                  return (
+                    <div key={`${entry.id}-${vi}`} className="rounded-2xl overflow-hidden border border-gray-100 shadow-sm">
+                      <div className="relative" style={{ paddingBottom: '56.25%' }}>
+                        <iframe
+                          className="absolute inset-0 w-full h-full"
+                          src={`https://www.youtube.com/embed/${ytId}`}
+                          title={entry.title}
+                          frameBorder="0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      </div>
+                      <div className="p-4">
+                        <p className="font-bold text-sm" style={{ color: '#1E3A8A' }}>{entry.title}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">{formatDate(entry.event_date)}</p>
+                      </div>
+                    </div>
+                  )
+                }).filter(Boolean)
+              ).slice(0, 4)}
+            </div>
+          </div>
         </section>
       )}
 
