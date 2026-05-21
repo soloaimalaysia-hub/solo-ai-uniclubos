@@ -46,40 +46,48 @@ export default function DashboardPage() {
     const clubId = user?.club_id
     const today = new Date().toISOString().split('T')[0]
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const base = (table: string): any => {
-      const q = supabase.from(table)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return clubId ? (q as any).eq('club_id', clubId) : q
+    try {
+      // IMPORTANT: .eq() must come AFTER .select() — apply club filter inline
+      let membersCountQ = supabase.from('uco_members').select('id', { count: 'exact', head: true }).eq('status', 'active')
+      if (clubId) membersCountQ = membersCountQ.eq('club_id', clubId)
+
+      let activitiesCountQ = supabase.from('uco_activities').select('id', { count: 'exact', head: true }).gte('activity_date', today)
+      if (clubId) activitiesCountQ = activitiesCountQ.eq('club_id', clubId)
+
+      let financeQ = supabase.from('uco_finance').select('amount, type')
+      if (clubId) financeQ = financeQ.eq('club_id', clubId)
+
+      let announcementsCountQ = supabase.from('uco_announcements').select('id', { count: 'exact', head: true }).eq('is_pinned', true)
+      if (clubId) announcementsCountQ = announcementsCountQ.eq('club_id', clubId)
+
+      let upcomingQ = supabase.from('uco_activities').select('id,title,activity_date,location,status').gte('activity_date', today).order('activity_date').limit(5)
+      if (clubId) upcomingQ = upcomingQ.eq('club_id', clubId)
+
+      let recentQ = supabase.from('uco_members').select('id,full_name,role,joined_at').order('joined_at', { ascending: false }).limit(5)
+      if (clubId) recentQ = recentQ.eq('club_id', clubId)
+
+      const [membersRes, activitiesRes, financeRes, announcementsRes, upcomingRes, recentRes] = await Promise.all([
+        membersCountQ, activitiesCountQ, financeQ, announcementsCountQ, upcomingQ, recentQ,
+      ])
+
+      const transactions: { type: string; amount: number }[] = financeRes.data || []
+      const balance = transactions.reduce((sum: number, t) => {
+        return sum + (t.type === 'income' ? Number(t.amount) : -Number(t.amount))
+      }, 0)
+
+      setStats({
+        members: membersRes.count || 0,
+        activities: activitiesRes.count || 0,
+        balance,
+        announcements: announcementsRes.count || 0,
+      })
+      setUpcoming(upcomingRes.data || [])
+      setRecentMembers(recentRes.data || [])
+    } catch (err) {
+      console.error('Dashboard loadData error:', err)
+    } finally {
+      setLoading(false)
     }
-
-    const [membersRes, activitiesRes, financeRes, announcementsRes, upcomingRes, recentRes] = await Promise.all([
-      base('uco_members').select('id', { count: 'exact', head: true }).eq('status', 'active'),
-      base('uco_activities').select('id', { count: 'exact', head: true }).gte('activity_date', today),
-      base('uco_finance').select('amount, type'),
-      base('uco_announcements').select('id', { count: 'exact', head: true }).eq('is_pinned', true),
-      base('uco_activities').select('id,title,activity_date,location,status')
-        .gte('activity_date', today)
-        .order('activity_date').limit(5),
-      base('uco_members').select('id,full_name,role,joined_at')
-        .order('joined_at', { ascending: false }).limit(5),
-    ])
-
-    // Calculate balance
-    const transactions: { type: string; amount: number }[] = financeRes.data || []
-    const balance = transactions.reduce((sum: number, t) => {
-      return sum + (t.type === 'income' ? Number(t.amount) : -Number(t.amount))
-    }, 0)
-
-    setStats({
-      members: membersRes.count || 0,
-      activities: activitiesRes.count || 0,
-      balance,
-      announcements: announcementsRes.count || 0,
-    })
-    setUpcoming(upcomingRes.data || [])
-    setRecentMembers(recentRes.data || [])
-    setLoading(false)
   }
 
   const statCards = [
