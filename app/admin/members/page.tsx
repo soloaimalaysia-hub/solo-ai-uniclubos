@@ -19,7 +19,7 @@ interface Member {
 }
 
 const ROLES = ['Member', 'Captain', 'Vice Captain', 'Secretary', 'Treasurer', 'Committee', 'Advisor']
-const STATUSES = ['active', 'inactive', 'graduated']
+const STATUSES = ['active', 'pending', 'inactive', 'graduated', 'rejected']
 
 function initials(name: string) {
   return name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
@@ -54,6 +54,18 @@ export default function MembersPage() {
   function openEdit(m: Member) {
     setEditingMember({ ...m })
     setShowModal(true)
+  }
+
+  async function approveMember(id: string) {
+    const supabase = createClient()
+    await supabase.from('uco_members').update({ status: 'active', updated_at: new Date().toISOString() }).eq('id', id)
+    loadMembers()
+  }
+
+  async function rejectMember(id: string) {
+    const supabase = createClient()
+    await supabase.from('uco_members').update({ status: 'rejected', updated_at: new Date().toISOString() }).eq('id', id)
+    loadMembers()
   }
 
   async function saveMember() {
@@ -109,6 +121,18 @@ export default function MembersPage() {
         </button>
       </div>
 
+      {/* Pending alert banner */}
+      {members.filter(m => m.status === 'pending').length > 0 && (
+        <div className="mb-4 flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold"
+          style={{ background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.2)', color: '#C2410C' }}>
+          <span style={{ fontSize: 16 }}>⏳</span>
+          <span>
+            {members.filter(m => m.status === 'pending').length} new member application{members.filter(m => m.status === 'pending').length > 1 ? 's' : ''} waiting for approval!
+            Click <strong>✓ Approve</strong> to accept.
+          </span>
+        </div>
+      )}
+
       <div className="relative mb-5">
         <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-uco-text-muted" />
         <input className="input pl-10" placeholder="Search by name, email or role..."
@@ -163,10 +187,30 @@ export default function MembersPage() {
                       {m.joined_at ? new Date(m.joined_at).toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
                     </td>
                     <td className="px-5 py-3.5">
-                      <span className={m.status === 'active' ? 'badge-green' : 'badge-gray'}>{m.status}</span>
+                      <span className={
+                        m.status === 'active'   ? 'badge-green' :
+                        m.status === 'pending'  ? 'badge-orange' :
+                        m.status === 'rejected' ? 'badge text-red-600 bg-red-50' :
+                        'badge-gray'
+                      }>{m.status}</span>
                     </td>
                     <td className="px-5 py-3.5">
-                      <button onClick={() => openEdit(m)} className="text-xs font-semibold hover:underline" style={{ color: '#1E3A8A' }}>Edit</button>
+                      <div className="flex items-center gap-2">
+                        {m.status === 'pending' && (
+                          <>
+                            <button onClick={() => approveMember(m.id)}
+                              className="text-xs font-bold px-3 py-1.5 rounded-lg text-white transition-all hover:opacity-90"
+                              style={{ background: '#10B981' }}>
+                              ✓ Approve
+                            </button>
+                            <button onClick={() => rejectMember(m.id)}
+                              className="text-xs font-semibold px-3 py-1.5 rounded-lg text-red-500 bg-red-50 hover:bg-red-100 transition-all">
+                              ✕ Reject
+                            </button>
+                          </>
+                        )}
+                        <button onClick={() => openEdit(m)} className="text-xs font-semibold hover:underline" style={{ color: '#1E3A8A' }}>Edit</button>
+                      </div>
                     </td>
                   </tr>
                 ))}
