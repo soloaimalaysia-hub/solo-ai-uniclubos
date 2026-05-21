@@ -23,8 +23,8 @@ const C = {
 
 // ── Theme background images ──────────────────────────────────────────────────
 const SUPABASE_URL = 'https://klrfpzxjsacriaqtfssf.supabase.co/storage/v1/object/public/uco-media'
-const HERO_BG  = `${SUPABASE_URL}/themes/default//WhatsApp%20Image%202026-05-21%20at%2018.06.02.jpeg`
-const ABOUT_BG = `${SUPABASE_URL}/themes/default//WhatsApp%20Image%202026-05-21%20at%2017.52.20%20(2).jpeg`
+const HERO_BG  = `${SUPABASE_URL}/themes/default/hero-bg.png.jpeg`
+const ABOUT_BG = `${SUPABASE_URL}/themes/default/about-bg.png.jpeg`
 
 // ── Inline social icons ────────────────────────────────────────────────────
 function IgIcon({ size = 20 }: { size?: number }) {
