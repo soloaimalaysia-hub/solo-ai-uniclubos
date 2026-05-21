@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import {
   LayoutDashboard, Users, Calendar, DollarSign,
-  BookOpen, Bell, Settings, LogOut, Menu, X, ChevronRight, Globe
+  BookOpen, Bell, Settings, LogOut, Menu, X, ChevronRight, Globe, Image as ImageIcon
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useAppStore } from '@/store/useAppStore'
@@ -16,6 +16,7 @@ const NAV_ITEMS = [
   { href: '/admin/activities', icon: Calendar, label: 'Activities' },
   { href: '/admin/finance', icon: DollarSign, label: 'Finance' },
   { href: '/admin/history', icon: BookOpen, label: 'History' },
+  { href: '/admin/gallery', icon: ImageIcon, label: 'Gallery' },
   { href: '/admin/announcements', icon: Bell, label: 'Announcements' },
   { href: '/admin/settings', icon: Settings, label: 'Settings' },
 ]
