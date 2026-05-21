@@ -124,8 +124,7 @@ export default function ClubPublicPage() {
   const [joining, setJoining]   = useState(false)
   const [joinDone, setJoinDone] = useState(false)
   const [lightbox, setLightbox] = useState<GalleryPhoto | null>(null)
-  const [heroLoaded, setHeroLoaded]   = useState(false)
-  const [aboutLoaded, setAboutLoaded] = useState(false)
+  // bg images loaded via CSS directly — no state needed
 
   const aboutRef      = useRef<HTMLElement>(null)
   const activitiesRef = useRef<HTMLElement>(null)
@@ -228,8 +227,8 @@ export default function ClubPublicPage() {
   const HERO_BG_URL  = `${SBASE}/storage/v1/object/public/uco-media/themes/${THEME}/whats-bg.png.jpeg`
   const ABOUT_BG_URL = `${SBASE}/storage/v1/object/public/uco-media/themes/${THEME}/about-bg.png.jpeg`
 
-  const heroStyle  = heroLoaded  ? { backgroundImage: `url(${HERO_BG_URL})` }  : { background: 'linear-gradient(135deg, #0d0d1a 0%, #1a0a00 50%, #0d0d0d 100%)' }
-  const aboutStyle = aboutLoaded ? { backgroundImage: `url(${ABOUT_BG_URL})` } : { background: '#0a0500' }
+  const heroStyle  = { background: `url('${HERO_BG_URL}') center top / cover no-repeat, linear-gradient(135deg, #0d0d1a 0%, #1a0a00 50%, #0d0d0d 100%)` }
+  const aboutStyle = { background: `url('${ABOUT_BG_URL}') left center / cover no-repeat, #0a0500` }
 
   const wa = `https://wa.me/?text=${encodeURIComponent(`Hi! I'd like to join ${club!.name}. Please let me know how to apply!`)}`
 
@@ -268,11 +267,6 @@ export default function ClubPublicPage() {
         }
       `}</style>
 
-      {/* Hidden preload imgs — detect when BGs are ready */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={HERO_BG_URL}  alt="" style={{ display: 'none' }} onLoad={() => setHeroLoaded(true)} />
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={ABOUT_BG_URL} alt="" style={{ display: 'none' }} onLoad={() => setAboutLoaded(true)} />
 
       {/* ═══════════════════════════════════════
           1 — HERO
@@ -283,8 +277,8 @@ export default function ClubPublicPage() {
       <section style={{ position: 'relative', minHeight: '100vh', width: '100%', overflow: 'hidden' }}>
 
         {/* Layer 1 — AI background */}
-        <div style={{ position: 'absolute', inset: 0, backgroundSize: 'cover', backgroundPosition: 'center top', backgroundRepeat: 'no-repeat', transition: 'background 0.5s ease', ...heroStyle }}>
-          {!heroLoaded && <BasketballBg />}
+        <div style={{ position: 'absolute', inset: 0, transition: 'opacity 0.5s ease', ...heroStyle }}>
+          <BasketballBg />
         </div>
 
         {/* Layer 2 — dark overlay */}
@@ -406,7 +400,7 @@ export default function ClubPublicPage() {
       <section ref={aboutRef} style={{ position: 'relative', minHeight: 600, overflow: 'hidden' }}>
 
         {/* Layer 1 — About BG */}
-        <div style={{ position: 'absolute', inset: 0, backgroundSize: 'cover', backgroundPosition: 'left center', backgroundRepeat: 'no-repeat', transition: 'background 0.5s ease', ...aboutStyle }} />
+        <div style={{ position: 'absolute', inset: 0, ...aboutStyle }} />
 
         {/* Layer 2 — dark overlay + left accent */}
         <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.62)' }} />
