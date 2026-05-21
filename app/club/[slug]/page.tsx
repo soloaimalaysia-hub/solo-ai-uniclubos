@@ -253,6 +253,22 @@ export default function ClubPublicPage() {
         .gal-item:hover .gal-overlay { opacity: 1; }
         .stat-cell { transition: background 0.3s ease; }
         .stat-cell:hover { background: rgba(255,107,0,0.12) !important; }
+        .hero-bg-layer {
+          position: absolute; inset: 0;
+          background-image: url("${HERO_BG_URL}");
+          background-size: cover;
+          background-position: center top;
+          background-repeat: no-repeat;
+          background-color: #0d0d1a;
+        }
+        .about-bg-layer {
+          position: absolute; inset: 0;
+          background-image: url("${ABOUT_BG_URL}");
+          background-size: cover;
+          background-position: left center;
+          background-repeat: no-repeat;
+          background-color: #0a0500;
+        }
         @media (max-width: 1024px) {
           .lg-grid-2 { grid-template-columns: 1fr !important; }
           .lg-grid-3 { grid-template-columns: 1fr 1fr !important; }
@@ -277,7 +293,7 @@ export default function ClubPublicPage() {
       <section style={{ position: 'relative', minHeight: '100vh', width: '100%', overflow: 'hidden' }}>
 
         {/* Layer 1 — AI background */}
-        <div style={{ position: 'absolute', inset: 0, transition: 'opacity 0.5s ease', ...heroStyle }}>
+        <div className="hero-bg-layer">
           <BasketballBg />
         </div>
 
@@ -400,7 +416,7 @@ export default function ClubPublicPage() {
       <section ref={aboutRef} style={{ position: 'relative', minHeight: 600, overflow: 'hidden' }}>
 
         {/* Layer 1 — About BG */}
-        <div style={{ position: 'absolute', inset: 0, ...aboutStyle }} />
+        <div className="about-bg-layer" />
 
         {/* Layer 2 — dark overlay + left accent */}
         <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.62)' }} />
