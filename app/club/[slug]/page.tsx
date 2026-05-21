@@ -21,10 +21,10 @@ const C = {
   white:  '#FFFFFF',
 }
 
-// ── Theme background images (upload these 2 files to Supabase Storage) ──────
+// ── Theme background images ──────────────────────────────────────────────────
 const SUPABASE_URL = 'https://klrfpzxjsacriaqtfssf.supabase.co/storage/v1/object/public/uco-media'
-const HERO_BG  = `${SUPABASE_URL}/themes/default/hero-bg.png`
-const ABOUT_BG = `${SUPABASE_URL}/themes/default/about-bg.png`
+const HERO_BG  = `${SUPABASE_URL}/themes/default//WhatsApp%20Image%202026-05-21%20at%2018.06.02.jpeg`
+const ABOUT_BG = `${SUPABASE_URL}/themes/default//WhatsApp%20Image%202026-05-21%20at%2017.52.20%20(2).jpeg`
 
 // ── Inline social icons ────────────────────────────────────────────────────
 function IgIcon({ size = 20 }: { size?: number }) {
