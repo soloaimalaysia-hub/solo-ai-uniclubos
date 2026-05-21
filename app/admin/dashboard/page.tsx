@@ -8,6 +8,7 @@ import Link from 'next/link'
 
 interface Stats {
   members: number
+  pending: number
   activities: number
   balance: number
   announcements: number
@@ -30,7 +31,7 @@ interface Member {
 
 export default function DashboardPage() {
   const { user } = useAppStore()
-  const [stats, setStats] = useState<Stats>({ members: 0, activities: 0, balance: 0, announcements: 0 })
+  const [stats, setStats] = useState<Stats>({ members: 0, pending: 0, activities: 0, balance: 0, announcements: 0 })
   const [upcoming, setUpcoming] = useState<Activity[]>([])
   const [recentMembers, setRecentMembers] = useState<Member[]>([])
   const [loading, setLoading] = useState(true)
@@ -48,8 +49,11 @@ export default function DashboardPage() {
 
     try {
       // IMPORTANT: .eq() must come AFTER .select() — apply club filter inline
-      let membersCountQ = supabase.from('uco_members').select('id', { count: 'exact', head: true }).eq('status', 'active')
+      let membersCountQ = supabase.from('uco_members').select('id', { count: 'exact', head: true })
       if (clubId) membersCountQ = membersCountQ.eq('club_id', clubId)
+
+      let pendingCountQ = supabase.from('uco_members').select('id', { count: 'exact', head: true }).eq('status', 'pending')
+      if (clubId) pendingCountQ = pendingCountQ.eq('club_id', clubId)
 
       let activitiesCountQ = supabase.from('uco_activities').select('id', { count: 'exact', head: true }).gte('activity_date', today)
       if (clubId) activitiesCountQ = activitiesCountQ.eq('club_id', clubId)
@@ -66,8 +70,8 @@ export default function DashboardPage() {
       let recentQ = supabase.from('uco_members').select('id,full_name,role,joined_at').order('joined_at', { ascending: false }).limit(5)
       if (clubId) recentQ = recentQ.eq('club_id', clubId)
 
-      const [membersRes, activitiesRes, financeRes, announcementsRes, upcomingRes, recentRes] = await Promise.all([
-        membersCountQ, activitiesCountQ, financeQ, announcementsCountQ, upcomingQ, recentQ,
+      const [membersRes, pendingRes, activitiesRes, financeRes, announcementsRes, upcomingRes, recentRes] = await Promise.all([
+        membersCountQ, pendingCountQ, activitiesCountQ, financeQ, announcementsCountQ, upcomingQ, recentQ,
       ])
 
       const transactions: { type: string; amount: number }[] = financeRes.data || []
@@ -77,6 +81,7 @@ export default function DashboardPage() {
 
       setStats({
         members: membersRes.count || 0,
+        pending: pendingRes.count || 0,
         activities: activitiesRes.count || 0,
         balance,
         announcements: announcementsRes.count || 0,
@@ -91,7 +96,7 @@ export default function DashboardPage() {
   }
 
   const statCards = [
-    { label: 'Total Members', value: stats.members.toString(), icon: Users, color: '#1E3A8A', href: '/admin/members', change: 'Active members' },
+    { label: 'Total Members', value: stats.members.toString(), icon: Users, color: '#1E3A8A', href: '/admin/members', change: stats.pending > 0 ? `${stats.pending} pending approval` : 'All members' },
     { label: 'Upcoming Activities', value: stats.activities.toString(), icon: Calendar, color: '#F97316', href: '/admin/activities', change: 'From today' },
     { label: 'Club Balance', value: `RM ${stats.balance.toLocaleString('en-MY', { minimumFractionDigits: 2 })}`, icon: DollarSign, color: '#10B981', href: '/admin/finance', change: 'Total balance' },
     { label: 'Pinned Notices', value: stats.announcements.toString(), icon: Bell, color: '#8B5CF6', href: '/admin/announcements', change: 'Active pins' },

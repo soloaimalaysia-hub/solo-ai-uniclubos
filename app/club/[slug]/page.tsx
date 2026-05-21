@@ -169,7 +169,7 @@ export default function ClubPublicPage() {
     const year  = new Date().getFullYear().toString()
 
     const [mRes, aRes, achRes, upRes, achListRes, hPhotoRes, aPhotoRes] = await Promise.all([
-      sb.from('uco_members').select('id', { count: 'exact', head: true }).eq('club_id', id).eq('status', 'active'),
+      sb.from('uco_members').select('id', { count: 'exact', head: true }).eq('club_id', id).in('status', ['active', 'pending']),
       sb.from('uco_activities').select('id', { count: 'exact', head: true }).eq('club_id', id).gte('activity_date', year + '-01-01'),
       sb.from('uco_history').select('id', { count: 'exact', head: true }).eq('club_id', id).in('category', ['Achievement', 'Championship', 'Award', 'Milestone']),
       sb.from('uco_activities').select('id,title,activity_date,location,description,expected_attendance,type').eq('club_id', id).gte('activity_date', today).neq('status', 'cancelled').order('activity_date').limit(3),
@@ -382,7 +382,7 @@ export default function ClubPublicPage() {
         <div style={{ maxWidth: 1280, margin: '0 auto' }}>
           <div className="lg-grid-stat" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', borderRadius: 20, overflow: 'hidden', border: '1px solid #E8E8E8', boxShadow: '0 8px 40px rgba(0,0,0,0.07)' }}>
             {[
-              { icon: <Users size={32} style={{ color: C.blue }} />,  val: club!.show_member_count ? memberCount : '—', label: 'Active Members' },
+              { icon: <Users size={32} style={{ color: C.blue }} />,  val: club!.show_member_count ? memberCount : '—', label: 'Members' },
               { icon: <Calendar size={32} style={{ color: C.red }} />, val: activityCount,      label: 'Events This Year' },
               { icon: <Trophy size={32} style={{ color: C.gold }} />,  val: achievementCount,   label: 'Achievements' },
               { icon: <Camera size={32} style={{ color: '#10B981' }} />, val: gallery.length,   label: 'Gallery Photos' },

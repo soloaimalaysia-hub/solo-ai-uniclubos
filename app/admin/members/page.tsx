@@ -97,7 +97,12 @@ export default function MembersPage() {
           <h1 className="text-2xl font-black text-uco-text flex items-center gap-2">
             <Users size={22} style={{ color: '#1E3A8A' }} /> Members
           </h1>
-          <p className="text-uco-text-muted text-sm mt-0.5">{members.filter(m => m.status === 'active').length} active members</p>
+          <p className="text-uco-text-muted text-sm mt-0.5">
+            {members.length} members &bull; {members.filter(m => m.status === 'active').length} active
+            {members.filter(m => m.status === 'pending').length > 0 && (
+              <span className="ml-1 text-orange-500 font-semibold">· {members.filter(m => m.status === 'pending').length} pending</span>
+            )}
+          </p>
         </div>
         <button onClick={openAdd} className="btn-primary text-sm">
           <Plus size={16} /> Add Member
