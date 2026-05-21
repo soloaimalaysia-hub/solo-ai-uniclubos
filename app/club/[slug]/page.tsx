@@ -3,178 +3,191 @@
 import { useEffect, useState, useRef } from 'react'
 import { useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import Link from 'next/link'
 import {
   Users, Calendar, Trophy, MapPin, Mail, Clock,
-  X, Send, CheckCircle, Camera, ChevronRight, Phone
+  X, CheckCircle, Camera, ChevronRight, Phone,
 } from 'lucide-react'
 
-// ── Inline social icons (lucide-react doesn't have these) ──
+// ── Design tokens ──────────────────────────────────────────────────────────
+const C = {
+  blue:  '#1A237E',
+  red:   '#E53935',
+  gold:  '#FFB300',
+  dark:  '#0D0D0D',
+  navy:  '#0D1B2A',
+  gray:  '#F5F5F5',
+  text:  '#555555',
+  white: '#FFFFFF',
+}
+
+// ── Inline social icons ────────────────────────────────────────────────────
 function IgIcon({ size = 20 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
-      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-      <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+      <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+      <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
     </svg>
   )
 }
 function FbIcon({ size = 20 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
+      <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
     </svg>
   )
 }
 function TikTokIcon({ size = 20 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.94a8.17 8.17 0 004.78 1.52V7.01a4.85 4.85 0 01-1.01-.32z" />
+      <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.94a8.17 8.17 0 004.78 1.52V7.01a4.85 4.85 0 01-1.01-.32z"/>
     </svg>
   )
 }
 
-// ── Basketball SVG watermark ──
-function BasketballWatermark() {
+// ── Basketball SVG background ──────────────────────────────────────────────
+function BasketballBg() {
   return (
-    <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" className="absolute inset-0 w-full h-full" style={{ opacity: 0.04 }}>
-      <circle cx="100" cy="100" r="90" fill="none" stroke="white" strokeWidth="6" />
-      <path d="M10 100 Q55 60 100 100 Q145 140 190 100" fill="none" stroke="white" strokeWidth="6" />
-      <path d="M10 100 Q55 140 100 100 Q145 60 190 100" fill="none" stroke="white" strokeWidth="6" />
-      <line x1="100" y1="10" x2="100" y2="190" stroke="white" strokeWidth="6" />
-    </svg>
+    <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', opacity: 0.05 }}>
+      <svg viewBox="0 0 600 600" style={{ position: 'absolute', right: -60, bottom: -60, width: 480, height: 480 }} fill="none" stroke="white" strokeWidth="7">
+        <circle cx="300" cy="300" r="280"/>
+        <path d="M20 300 Q160 160 300 300 Q440 440 580 300"/>
+        <path d="M20 300 Q160 440 300 300 Q440 160 580 300"/>
+        <line x1="300" y1="20" x2="300" y2="580"/>
+        <line x1="20" y1="300" x2="580" y2="300"/>
+      </svg>
+      <svg viewBox="0 0 400 400" style={{ position: 'absolute', left: -40, top: -40, width: 280, height: 280, opacity: 0.5 }} fill="none" stroke="white" strokeWidth="7">
+        <circle cx="200" cy="200" r="180"/>
+        <path d="M20 200 Q110 100 200 200 Q290 300 380 200"/>
+        <path d="M20 200 Q110 300 200 200 Q290 100 380 200"/>
+        <line x1="200" y1="20" x2="200" y2="380"/>
+      </svg>
+    </div>
   )
 }
 
-// ── Types ──
+// ── Section label component ────────────────────────────────────────────────
+function SectionTag({ children, dark = false }: { children: React.ReactNode; dark?: boolean }) {
+  void dark
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+      <div style={{ width: 4, height: 32, borderRadius: 2, background: C.red, flexShrink: 0 }} />
+      <span style={{ color: C.red, fontWeight: 800, fontSize: 13, letterSpacing: 2.5, textTransform: 'uppercase' as const }}>{children}</span>
+    </div>
+  )
+}
+
+// ── Types ──────────────────────────────────────────────────────────────────
 interface Club {
-  id: string
-  name: string
-  slug: string
-  description: string | null
-  university_name: string | null
-  category: string | null
-  founded_year: number | null
-  logo_url: string | null
-  cover_image_url: string | null
-  contact_email: string | null
-  contact_phone: string | null
-  faculty: string | null
-  max_members: number | null
-  instagram_url: string | null
-  facebook_url: string | null
-  tiktok_url: string | null
-  gallery_photos: string[]
-  show_activities: boolean
-  show_member_count: boolean
-  show_gallery: boolean
-  allow_join_applications: boolean
+  id: string; name: string; slug: string
+  description: string | null; university_name: string | null; category: string | null
+  founded_year: number | null; logo_url: string | null; cover_image_url: string | null
+  contact_email: string | null; contact_phone: string | null; faculty: string | null
+  max_members: number | null; instagram_url: string | null; facebook_url: string | null
+  tiktok_url: string | null; gallery_photos: string[]
+  show_activities: boolean; show_member_count: boolean; show_gallery: boolean; allow_join_applications: boolean
 }
 interface Activity {
-  id: string
-  title: string
-  activity_date: string
-  end_date: string | null
-  location: string | null
-  description: string | null
-  expected_attendance: number | null
+  id: string; title: string; activity_date: string; location: string | null
+  description: string | null; expected_attendance: number | null; type: string | null
 }
 interface Achievement {
-  id: string
-  title: string
-  content: string | null
-  event_date: string
-  category: string
-  is_milestone: boolean
+  id: string; title: string; content: string | null; event_date: string
+  category: string; is_milestone: boolean
 }
-interface VideoHighlight {
-  id: string
-  title: string
-  video_links: string[]
-  event_date: string
-}
-interface JoinForm {
-  full_name: string
-  student_id: string
-  email: string
-  phone: string
-  motivation: string
+interface GalleryPhoto { url: string; title: string }
+interface JoinForm { full_name: string; student_id: string; email: string; phone: string; motivation: string }
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function activityColor(type: string | null) {
+  const t = (type || '').toLowerCase()
+  if (t.includes('train')) return '#F97316'
+  if (t.includes('game') || t.includes('match') || t.includes('tournament')) return C.blue
+  if (t.includes('meet')) return '#10B981'
+  if (t.includes('social')) return '#8B5CF6'
+  return C.red
 }
 
-// YouTube embed helper
-function getYouTubeId(url: string): string | null {
-  const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([A-Za-z0-9_-]{11})/)
-  return m ? m[1] : null
+function trophyIcon(category: string, milestone: boolean): string {
+  const c = category.toLowerCase()
+  if (c.includes('champion') || c.includes('gold') || c.includes('first')) return '🥇'
+  if (c.includes('runner') || c.includes('silver') || c.includes('second')) return '🥈'
+  if (c.includes('third') || c.includes('bronze')) return '🥉'
+  if (milestone) return '🏆'
+  return '🏆'
 }
 
-const CATEGORY_EMOJI: Record<string, string> = {
-  Sports: '🏅', Cultural: '🎭', Academic: '📚',
-  Religious: '🕌', Interest: '⭐', Others: '🎯',
+function fmtDate(d: string) {
+  return new Date(d).toLocaleDateString('en-MY', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
 }
 
+// ── Main ───────────────────────────────────────────────────────────────────
 export default function ClubPublicPage() {
-  const params = useParams()
-  const slug = params.slug as string
+  const { slug } = useParams() as { slug: string }
 
-  const [club, setClub] = useState<Club | null>(null)
+  const [club, setClub]           = useState<Club | null>(null)
   const [activities, setActivities] = useState<Activity[]>([])
   const [achievements, setAchievements] = useState<Achievement[]>([])
+  const [gallery, setGallery]     = useState<GalleryPhoto[]>([])
   const [memberCount, setMemberCount] = useState(0)
   const [activityCount, setActivityCount] = useState(0)
   const [achievementCount, setAchievementCount] = useState(0)
-  const [loading, setLoading] = useState(true)
-  const [notFound, setNotFound] = useState(false)
+  const [loading, setLoading]     = useState(true)
+  const [notFound, setNotFound]   = useState(false)
 
-  // Join form
-  const [joinForm, setJoinForm] = useState<JoinForm>({ full_name: '', student_id: '', email: '', phone: '', motivation: '' })
-  const [joining, setJoining] = useState(false)
-  const [joinDone, setJoinDone] = useState(false)
+  const [joinForm, setJoinForm]   = useState<JoinForm>({ full_name: '', student_id: '', email: '', phone: '', motivation: '' })
+  const [joining, setJoining]     = useState(false)
+  const [joinDone, setJoinDone]   = useState(false)
+  const [lightbox, setLightbox]   = useState<GalleryPhoto | null>(null)
 
-  // Video highlights
-  const [videoHighlights, setVideoHighlights] = useState<VideoHighlight[]>([])
-
-  // Lightbox (URL string)
-  const [lightbox, setLightbox] = useState<string | null>(null)
-
-  // Refs for scroll
-  const aboutRef = useRef<HTMLDivElement>(null)
-  const activitiesRef = useRef<HTMLDivElement>(null)
-  const galleryRef = useRef<HTMLDivElement>(null)
-  const joinRef = useRef<HTMLDivElement>(null)
+  const aboutRef      = useRef<HTMLElement>(null)
+  const activitiesRef = useRef<HTMLElement>(null)
+  const galleryRef    = useRef<HTMLElement>(null)
+  const joinRef       = useRef<HTMLElement>(null)
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { if (slug) loadData() }, [slug])
 
-  async function loadData() {
-    const supabase = createClient()
-    const { data: clubData } = await supabase.from('uco_clubs').select('*').eq('slug', slug).single()
-    if (!clubData) { setNotFound(true); setLoading(false); return }
-    setClub({ ...clubData, gallery_photos: clubData.gallery_photos || [] })
-    const clubId = clubData.id
-    const today = new Date().toISOString().split('T')[0]
-    const thisYear = new Date().getFullYear().toString()
+  // Scroll-reveal
+  useEffect(() => {
+    if (loading) return
+    const io = new IntersectionObserver(
+      entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('rv') }),
+      { threshold: 0.07 }
+    )
+    document.querySelectorAll('.rvl').forEach(el => io.observe(el))
+    return () => io.disconnect()
+  }, [loading])
 
-    const [membersRes, activitiesRes, achieveRes, upcomingRes, achieveListRes, videoRes] = await Promise.all([
-      supabase.from('uco_members').select('id', { count: 'exact', head: true }).eq('club_id', clubId).eq('status', 'active'),
-      supabase.from('uco_activities').select('id', { count: 'exact', head: true }).eq('club_id', clubId).gte('activity_date', thisYear + '-01-01'),
-      supabase.from('uco_history').select('id', { count: 'exact', head: true }).eq('club_id', clubId).in('category', ['Achievement', 'Championship', 'Award']),
-      supabase.from('uco_activities').select('id,title,activity_date,end_date,location,description,expected_attendance')
-        .eq('club_id', clubId).gte('activity_date', today).neq('status', 'cancelled').order('activity_date').limit(3),
-      supabase.from('uco_history').select('id,title,content,event_date,category,is_milestone')
-        .eq('club_id', clubId).in('category', ['Achievement', 'Championship', 'Award', 'Milestone']).order('event_date', { ascending: false }).limit(8),
-      supabase.from('uco_history').select('id,title,video_links,event_date')
-        .eq('club_id', clubId).order('event_date', { ascending: false }).limit(20),
+  async function loadData() {
+    const sb = createClient()
+    const { data: c } = await sb.from('uco_clubs').select('*').eq('slug', slug).single()
+    if (!c) { setNotFound(true); setLoading(false); return }
+    setClub({ ...c, gallery_photos: c.gallery_photos || [] })
+    const id = c.id
+    const today = new Date().toISOString().split('T')[0]
+    const year  = new Date().getFullYear().toString()
+
+    const [mRes, aRes, achRes, upRes, achListRes, hPhotoRes, aPhotoRes] = await Promise.all([
+      sb.from('uco_members').select('id', { count: 'exact', head: true }).eq('club_id', id).eq('status', 'active'),
+      sb.from('uco_activities').select('id', { count: 'exact', head: true }).eq('club_id', id).gte('activity_date', year + '-01-01'),
+      sb.from('uco_history').select('id', { count: 'exact', head: true }).eq('club_id', id).in('category', ['Achievement', 'Championship', 'Award', 'Milestone']),
+      sb.from('uco_activities').select('id,title,activity_date,location,description,expected_attendance,type').eq('club_id', id).gte('activity_date', today).neq('status', 'cancelled').order('activity_date').limit(3),
+      sb.from('uco_history').select('id,title,content,event_date,category,is_milestone').eq('club_id', id).in('category', ['Achievement', 'Championship', 'Award', 'Milestone']).order('event_date', { ascending: false }).limit(8),
+      sb.from('uco_history').select('id,title,photos').eq('club_id', id).order('event_date', { ascending: false }).limit(10),
+      sb.from('uco_activities').select('id,title,event_photos').eq('club_id', id).order('activity_date', { ascending: false }).limit(10),
     ])
 
-    setMemberCount(membersRes.count || 0)
-    setActivityCount(activitiesRes.count || 0)
-    setAchievementCount(achieveRes.count || 0)
-    setActivities(upcomingRes.data || [])
-    setAchievements(achieveListRes.data || [])
-    // Only entries that actually have video_links
-    setVideoHighlights(
-      (videoRes.data || []).filter(v => v.video_links && v.video_links.length > 0) as VideoHighlight[]
-    )
+    setMemberCount(mRes.count || 0)
+    setActivityCount(aRes.count || 0)
+    setAchievementCount(achRes.count || 0)
+    setActivities(upRes.data || [])
+    setAchievements(achListRes.data || [])
+
+    const clubPics   = (c.gallery_photos || []).map((url: string) => ({ url, title: c.name }))
+    const histPics   = (hPhotoRes.data || []).flatMap((h: { title: string; photos: string[] }) => (h.photos || []).map((url: string) => ({ url, title: h.title })))
+    const actPics    = (aPhotoRes.data || []).flatMap((a: { title: string; event_photos: string[] }) => (a.event_photos || []).map((url: string) => ({ url, title: a.title })))
+    setGallery([...clubPics, ...histPics, ...actPics].slice(0, 24))
     setLoading(false)
   }
 
@@ -182,580 +195,548 @@ export default function ClubPublicPage() {
     e.preventDefault()
     if (!club || !joinForm.full_name || !joinForm.email) return
     setJoining(true)
-    const supabase = createClient()
-    await supabase.from('uco_members').insert({
-      club_id: club.id,
-      full_name: joinForm.full_name,
-      student_id: joinForm.student_id || null,
-      email: joinForm.email,
-      phone: joinForm.phone || null,
-      role: 'Member',
-      position: 'Member',
-      status: 'pending',
+    const sb = createClient()
+    await sb.from('uco_members').insert({
+      club_id: club.id, full_name: joinForm.full_name,
+      student_id: joinForm.student_id || null, email: joinForm.email,
+      phone: joinForm.phone || null, role: 'Member', position: 'Member', status: 'pending',
       notes: joinForm.motivation || null,
       joined_at: new Date().toISOString().split('T')[0],
       joined_date: new Date().toISOString().split('T')[0],
     })
-    setJoining(false)
-    setJoinDone(true)
+    setJoining(false); setJoinDone(true)
   }
 
-  function formatDate(d: string) {
-    return new Date(d).toLocaleDateString('en-MY', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
-  }
-  function scrollTo(ref: React.RefObject<HTMLDivElement>) {
+  function scrollTo(ref: React.RefObject<HTMLElement>) {
     ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
-  function getAchievementIcon(cat: string, milestone: boolean) {
-    if (milestone) return '🏆'
-    if (cat === 'Championship') return '🥇'
-    if (cat === 'Achievement') return '🎖️'
-    if (cat === 'Award') return '🏅'
-    return '⭐'
   }
 
   // ── Loading ──
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: '#0F172A' }}>
-      <div className="text-center">
-        <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-white font-black text-2xl mx-auto mb-4 animate-pulse" style={{ background: '#F97316' }}>U</div>
-        <p className="text-white/60 text-sm">Loading club page...</p>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: C.blue }}>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ width: 80, height: 80, borderRadius: 20, background: C.red, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: 36, color: '#fff', margin: '0 auto 20px', animation: 'pulse 1.5s infinite' }}>U</div>
+        <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, letterSpacing: 3, textTransform: 'uppercase' }}>Loading...</p>
       </div>
     </div>
   )
 
-  // ── Not Found ──
+  // ── Not found ──
   if (notFound) return (
-    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#0F172A' }}>
-      <div className="text-center">
-        <div className="text-7xl mb-6">🏀</div>
-        <h1 className="text-3xl font-black text-white mb-3">Club Not Found</h1>
-        <p className="text-white/50 mb-8">This club page doesn&apos;t exist or the link may have changed.</p>
-        <Link href="https://solo-ai-uniclubos.vercel.app" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white" style={{ background: '#F97316' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: C.navy, padding: 24 }}>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: 96, marginBottom: 24 }}>🏀</div>
+        <h1 style={{ color: '#fff', fontSize: 40, fontWeight: 900, marginBottom: 16 }}>Club Not Found</h1>
+        <p style={{ color: 'rgba(255,255,255,0.4)', marginBottom: 32 }}>This page doesn&apos;t exist or the link may have changed.</p>
+        <a href="https://solo-ai-uniclubos.vercel.app" style={{ display: 'inline-block', padding: '16px 40px', background: C.red, color: '#fff', borderRadius: 12, fontWeight: 700, fontSize: 16, textDecoration: 'none' }}>
           Back to UniClub OS
-        </Link>
+        </a>
       </div>
     </div>
   )
 
-  const categoryEmoji = CATEGORY_EMOJI[club!.category || ''] || '🎯'
-  const whatsappLink = `https://wa.me/?text=${encodeURIComponent(`Hi! I'd like to join ${club!.name}. Please let me know how to apply!`)}`
+  const wa = `https://wa.me/?text=${encodeURIComponent(`Hi! I'd like to join ${club!.name}. Please let me know how to apply!`)}`
 
+  // ── Page ──
   return (
-    <div className="min-h-screen bg-white" style={{ fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
 
-      {/* ═══════════════════════════════════════════
-          SECTION 1 — HERO
-      ═══════════════════════════════════════════ */}
-      <section className="relative flex items-center justify-center overflow-hidden" style={{ minHeight: '70vh' }}>
+      {/* Global styles */}
+      <style>{`
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        .rvl { opacity: 0; transform: translateY(28px); transition: opacity 0.65s ease, transform 0.65s ease; }
+        .rv  { opacity: 1 !important; transform: translateY(0) !important; }
+        .d1  { transition-delay: 0.1s !important; }
+        .d2  { transition-delay: 0.2s !important; }
+        .d3  { transition-delay: 0.3s !important; }
+        .d4  { transition-delay: 0.4s !important; }
+        .hov-scale { transition: transform 0.35s ease; }
+        .hov-scale:hover { transform: scale(1.04); }
+        .hov-btn { transition: filter 0.22s ease, transform 0.22s ease; }
+        .hov-btn:hover { filter: brightness(1.12); transform: translateY(-2px); }
+        .gal-overlay { opacity: 0; transition: opacity 0.3s ease; }
+        .gal-item:hover .gal-overlay { opacity: 1; }
+        @media (max-width: 1024px) {
+          .lg-grid-2 { grid-template-columns: 1fr !important; }
+          .lg-grid-3 { grid-template-columns: 1fr 1fr !important; }
+          .lg-grid-4 { grid-template-columns: 1fr 1fr !important; }
+          .lg-grid-cta { grid-template-columns: 1fr !important; }
+        }
+        @media (max-width: 640px) {
+          .lg-grid-3 { grid-template-columns: 1fr !important; }
+          .lg-grid-stat { grid-template-columns: 1fr 1fr !important; }
+          .lg-grid-gal { column-count: 2 !important; }
+          .footer-grid { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
+
+      {/* ═══════════════════════════════════════
+          1 — HERO
+      ═══════════════════════════════════════ */}
+      <section style={{ minHeight: '85vh', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
         {/* Background */}
-        <div className="absolute inset-0" style={{
-          background: 'linear-gradient(135deg, #1E3A8A 0%, #1e40af 50%, #0F172A 100%)'
-        }}>
-          {club!.cover_image_url && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={club!.cover_image_url} alt="cover" className="absolute inset-0 w-full h-full object-cover" />
+        <div style={{ position: 'absolute', inset: 0 }}>
+          {club!.cover_image_url ? (
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={club!.cover_image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} />
+              <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.58)' }} />
+            </>
+          ) : (
+            <>
+              <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg, ${C.blue} 0%, #0D47A1 50%, ${C.dark} 100%)` }} />
+              <BasketballBg />
+            </>
           )}
-          {/* Basketball watermark */}
-          {!club!.cover_image_url && <BasketballWatermark />}
-          {/* Overlay */}
-          <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.52)' }} />
         </div>
 
-        {/* Hero content */}
-        <div className="relative z-10 flex flex-col items-center text-center px-4 py-20 w-full max-w-4xl mx-auto">
-          {/* Logo */}
-          <div className="mb-6">
-            <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-full border-4 border-white shadow-2xl overflow-hidden flex items-center justify-center mx-auto" style={{ background: '#1E3A8A' }}>
+        {/* Content */}
+        <div style={{ position: 'relative', zIndex: 10, textAlign: 'center', padding: '100px 24px 120px', width: '100%', maxWidth: 960, margin: '0 auto' }}>
+          {/* Logo circle */}
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 28 }}>
+            <div style={{ width: 120, height: 120, borderRadius: '50%', border: '3px solid rgba(255,255,255,0.88)', boxShadow: '0 8px 40px rgba(0,0,0,0.45)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: C.blue, flexShrink: 0 }}>
               {club!.logo_url
-                ? ( // eslint-disable-next-line @next/next/no-img-element
-                    <img src={club!.logo_url} alt="logo" className="w-full h-full object-cover" />)
-                : <span className="text-white font-black text-5xl">{club!.name[0]}</span>
+                // eslint-disable-next-line @next/next/no-img-element
+                ? <img src={club!.logo_url} alt="logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : <span style={{ color: '#fff', fontSize: 52, fontWeight: 900, lineHeight: 1 }}>{club!.name[0]}</span>
               }
             </div>
           </div>
 
           {/* Category badge */}
-          <div className="flex items-center gap-2 mb-4">
-            <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-bold" style={{ background: '#F97316', color: '#fff' }}>
-              {categoryEmoji} {club!.category || 'Club'}
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 10, marginBottom: 24, flexWrap: 'wrap' }}>
+            <span style={{ padding: '8px 22px', borderRadius: 999, background: C.red, color: '#fff', fontWeight: 700, fontSize: 15, letterSpacing: 0.3 }}>
+              🏀 {club!.category || 'Sports'} · Basketball
             </span>
             {club!.founded_year && (
-              <span className="px-3 py-1.5 rounded-full text-sm font-medium text-white/80 border border-white/20">
+              <span style={{ padding: '8px 18px', borderRadius: 999, border: '1px solid rgba(255,255,255,0.3)', color: 'rgba(255,255,255,0.6)', fontSize: 14 }}>
                 Est. {club!.founded_year}
               </span>
             )}
           </div>
 
           {/* Club name */}
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white leading-tight mb-3">
+          <h1 style={{ color: '#fff', fontSize: 'clamp(40px, 6vw, 72px)', fontWeight: 900, lineHeight: 1.08, marginBottom: 14, textShadow: '0 4px 24px rgba(0,0,0,0.4)', letterSpacing: '-1px' }}>
             {club!.name}
           </h1>
 
           {/* University */}
           {club!.university_name && (
-            <p className="text-lg sm:text-xl text-white/70 mb-8 font-medium">{club!.university_name}</p>
+            <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: 'clamp(15px, 2vw, 20px)', marginBottom: 6, fontWeight: 500 }}>
+              {club!.university_name}
+            </p>
           )}
 
-          {/* CTA Buttons */}
-          <div className="flex flex-wrap items-center justify-center gap-3 mb-10">
+          {/* CTA buttons */}
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 14, flexWrap: 'wrap', marginTop: 40, marginBottom: 40 }}>
             {club!.allow_join_applications && (
-              <button onClick={() => scrollTo(joinRef)}
-                className="flex items-center gap-2 px-7 py-3.5 rounded-xl font-bold text-white text-base shadow-lg hover:opacity-90 transition-all active:scale-95"
-                style={{ background: '#F97316' }}>
+              <button onClick={() => scrollTo(joinRef)} className="hov-btn"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '0 36px', height: 52, borderRadius: 12, background: C.red, color: '#fff', fontWeight: 800, fontSize: 17, border: 'none', cursor: 'pointer', boxShadow: `0 8px 32px rgba(229,57,53,0.55)` }}>
                 🏅 Join This Club
               </button>
             )}
-            {club!.contact_email && (
-              <a href={`mailto:${club!.contact_email}`}
-                className="flex items-center gap-2 px-7 py-3.5 rounded-xl font-bold text-white text-base border-2 border-white/50 hover:bg-white/10 transition-all">
-                <Mail size={18} /> Contact Us
-              </a>
-            )}
-            {!club!.contact_email && (
-              <button onClick={() => scrollTo(aboutRef)}
-                className="flex items-center gap-2 px-7 py-3.5 rounded-xl font-bold text-white text-base border-2 border-white/50 hover:bg-white/10 transition-all">
-                Learn More <ChevronRight size={18} />
-              </button>
-            )}
+            <button onClick={() => scrollTo(aboutRef)} className="hov-btn"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '0 32px', height: 52, borderRadius: 12, background: 'transparent', color: '#fff', fontWeight: 700, fontSize: 16, border: '2px solid rgba(255,255,255,0.55)', cursor: 'pointer' }}>
+              Learn More <ChevronRight size={18} />
+            </button>
           </div>
 
           {/* Social icons */}
-          <div className="flex items-center gap-3">
-            {club!.instagram_url && (
-              <a href={club!.instagram_url} target="_blank" rel="noopener noreferrer"
-                className="w-10 h-10 rounded-xl bg-white/15 hover:bg-white/25 flex items-center justify-center text-white transition-all">
-                <IgIcon size={18} />
-              </a>
-            )}
-            {club!.facebook_url && (
-              <a href={club!.facebook_url} target="_blank" rel="noopener noreferrer"
-                className="w-10 h-10 rounded-xl bg-white/15 hover:bg-white/25 flex items-center justify-center text-white transition-all">
-                <FbIcon size={18} />
-              </a>
-            )}
-            {club!.tiktok_url && (
-              <a href={club!.tiktok_url} target="_blank" rel="noopener noreferrer"
-                className="w-10 h-10 rounded-xl bg-white/15 hover:bg-white/25 flex items-center justify-center text-white transition-all">
-                <TikTokIcon size={18} />
-              </a>
-            )}
-          </div>
+          {(club!.instagram_url || club!.facebook_url || club!.tiktok_url) && (
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 12 }}>
+              {club!.instagram_url && (
+                <a href={club!.instagram_url} target="_blank" rel="noopener noreferrer"
+                  style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(255,255,255,0.16)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', textDecoration: 'none' }}>
+                  <IgIcon size={22} />
+                </a>
+              )}
+              {club!.facebook_url && (
+                <a href={club!.facebook_url} target="_blank" rel="noopener noreferrer"
+                  style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(255,255,255,0.16)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', textDecoration: 'none' }}>
+                  <FbIcon size={22} />
+                </a>
+              )}
+              {club!.tiktok_url && (
+                <a href={club!.tiktok_url} target="_blank" rel="noopener noreferrer"
+                  style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(255,255,255,0.16)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', textDecoration: 'none' }}>
+                  <TikTokIcon size={22} />
+                </a>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* Scroll indicator */}
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 text-white/40">
-          <div className="w-5 h-8 rounded-full border border-white/30 flex items-start justify-center pt-1.5">
-            <div className="w-1 h-2 rounded-full bg-white/50 animate-bounce" />
-          </div>
+        {/* Powered by */}
+        <div style={{ position: 'absolute', bottom: 96, right: 32, color: 'rgba(255,255,255,0.25)', fontSize: 12 }}>
+          Powered by UniClub OS
         </div>
+
+        {/* Bottom fade */}
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 80, background: `linear-gradient(to bottom, transparent, ${C.gray})`, pointerEvents: 'none' }} />
       </section>
 
-      {/* ═══════════════════════════════════════════
-          SECTION 2 — STATS BAR
-      ═══════════════════════════════════════════ */}
-      <section className="bg-white border-b border-gray-100 shadow-sm">
-        <div className="max-w-5xl mx-auto px-4">
-          <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-gray-100">
+      {/* ═══════════════════════════════════════
+          2 — STATS BAR
+      ═══════════════════════════════════════ */}
+      <section style={{ background: C.white, padding: '0 24px 40px' }}>
+        <div style={{ maxWidth: 1280, margin: '0 auto' }}>
+          <div className="lg-grid-stat" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', borderRadius: 20, overflow: 'hidden', border: '1px solid #E8E8E8', boxShadow: '0 8px 40px rgba(0,0,0,0.07)' }}>
             {[
-              { icon: <Users size={22} />, value: club!.show_member_count ? memberCount : '—', label: 'Active Members' },
-              { icon: <Calendar size={22} />, value: activityCount, label: 'Events This Year' },
-              { icon: <Trophy size={22} />, value: achievementCount, label: 'Achievements' },
-              { icon: <Camera size={22} />, value: (club!.gallery_photos || []).length, label: 'Gallery Photos' },
-            ].map((stat, i) => (
-              <div key={i} className="flex flex-col items-center py-8 px-4 text-center">
-                <div className="mb-2" style={{ color: '#F97316' }}>{stat.icon}</div>
-                <div className="text-3xl sm:text-4xl font-black mb-1" style={{ color: '#1E3A8A' }}>{stat.value}</div>
-                <div className="text-xs font-semibold uppercase tracking-wide text-gray-400">{stat.label}</div>
+              { icon: <Users size={32} style={{ color: C.blue }} />,  val: club!.show_member_count ? memberCount : '—', label: 'Active Members' },
+              { icon: <Calendar size={32} style={{ color: C.red }} />, val: activityCount,      label: 'Events This Year' },
+              { icon: <Trophy size={32} style={{ color: C.gold }} />,  val: achievementCount,   label: 'Achievements' },
+              { icon: <Camera size={32} style={{ color: '#10B981' }} />, val: gallery.length,   label: 'Gallery Photos' },
+            ].map((s, i) => (
+              <div key={i} className={`rvl d${i + 1}`} style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 24px',
+                borderRight: i < 3 ? '1px solid #E8E8E8' : undefined, textAlign: 'center', background: '#fff',
+              }}>
+                <div style={{ marginBottom: 14 }}>{s.icon}</div>
+                <div style={{ fontSize: 'clamp(36px, 4vw, 56px)', fontWeight: 900, color: C.blue, lineHeight: 1, marginBottom: 10, fontVariantNumeric: 'tabular-nums' }}>{s.val}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#AAAAAA', textTransform: 'uppercase', letterSpacing: 1.5 }}>{s.label}</div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ═══════════════════════════════════════════
-          SECTION 3 — ABOUT US
-      ═══════════════════════════════════════════ */}
-      <section ref={aboutRef} className="py-16 lg:py-24" style={{ background: '#F8FAFC' }}>
-        <div className="max-w-5xl mx-auto px-4 sm:px-6">
-          <div className="grid lg:grid-cols-5 gap-10 items-start">
-            {/* Left: Description */}
-            <div className="lg:col-span-3">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-1 h-8 rounded-full" style={{ background: '#F97316' }} />
-                <span className="text-sm font-bold uppercase tracking-widest" style={{ color: '#F97316' }}>About Us</span>
-              </div>
-              <h2 className="text-3xl sm:text-4xl font-black mb-6 leading-tight" style={{ color: '#1E3A8A' }}>
-                About Our Club
-              </h2>
-              <p className="text-gray-600 text-lg leading-relaxed">
-                {club!.description || `Welcome to ${club!.name}! We are a passionate group of students dedicated to our craft, building community, and creating memories that last a lifetime. Join us and be part of something amazing.`}
-              </p>
-
-              {/* Quick Nav Pills */}
-              <div className="flex flex-wrap gap-2 mt-8">
-                {club!.show_activities && activities.length > 0 && (
-                  <button onClick={() => scrollTo(activitiesRef)}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold border-2 hover:bg-blue-50 transition-all"
-                    style={{ borderColor: '#1E3A8A', color: '#1E3A8A' }}>
-                    <Calendar size={14} /> Activities
-                  </button>
-                )}
-                {club!.show_gallery && ((club!.gallery_photos || []).length > 0) && (
-                  <button onClick={() => scrollTo(galleryRef)}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold border-2 hover:bg-blue-50 transition-all"
-                    style={{ borderColor: '#1E3A8A', color: '#1E3A8A' }}>
-                    <Camera size={14} /> Gallery
-                  </button>
-                )}
-                {club!.allow_join_applications && (
-                  <button onClick={() => scrollTo(joinRef)}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold text-white transition-all hover:opacity-90"
-                    style={{ background: '#F97316' }}>
-                    Join Now <ChevronRight size={14} />
-                  </button>
-                )}
-              </div>
+      {/* ═══════════════════════════════════════
+          3 — ABOUT US
+      ═══════════════════════════════════════ */}
+      <section ref={aboutRef} style={{ background: C.white, padding: '80px 24px', minHeight: 400 }}>
+        <div className="lg-grid-2" style={{ maxWidth: 1280, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 72, alignItems: 'start' }}>
+          {/* Left */}
+          <div className="rvl">
+            <SectionTag>About Us</SectionTag>
+            <h2 style={{ color: C.blue, fontSize: 'clamp(28px, 3.5vw, 48px)', fontWeight: 900, lineHeight: 1.12, marginBottom: 28, letterSpacing: '-0.5px' }}>
+              About Our Club
+            </h2>
+            <p style={{ color: C.text, fontSize: 18, lineHeight: 1.85, marginBottom: 36 }}>
+              {club!.description ||
+                `Welcome to ${club!.name}! We are a passionate group of students dedicated to our sport, building community, and creating memories that last a lifetime. Join us and be part of something amazing.`
+              }
+            </p>
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              {club!.show_activities && (
+                <button onClick={() => scrollTo(activitiesRef)} className="hov-btn"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '11px 22px', borderRadius: 10, border: `2px solid ${C.blue}`, color: C.blue, fontWeight: 700, fontSize: 14, background: 'transparent', cursor: 'pointer' }}>
+                  <Calendar size={15} /> Activities
+                </button>
+              )}
+              {club!.show_gallery && (
+                <button onClick={() => scrollTo(galleryRef)} className="hov-btn"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '11px 22px', borderRadius: 10, border: `2px solid ${C.blue}`, color: C.blue, fontWeight: 700, fontSize: 14, background: 'transparent', cursor: 'pointer' }}>
+                  <Camera size={15} /> Gallery
+                </button>
+              )}
+              {club!.allow_join_applications && (
+                <button onClick={() => scrollTo(joinRef)} className="hov-btn"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '11px 22px', borderRadius: 10, background: C.red, color: '#fff', fontWeight: 700, fontSize: 14, border: 'none', cursor: 'pointer' }}>
+                  Join Now <ChevronRight size={15} />
+                </button>
+              )}
             </div>
+          </div>
 
-            {/* Right: Info Card */}
-            <div className="lg:col-span-2">
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                <div className="px-5 py-4 border-b border-gray-100" style={{ background: '#1E3A8A' }}>
-                  <h3 className="font-bold text-white text-sm uppercase tracking-wide">Club Details</h3>
-                </div>
-                <div className="divide-y divide-gray-50">
-                  {[
-                    { icon: <MapPin size={15} />, label: 'University', val: club!.university_name },
-                    { icon: <Users size={15} />, label: 'Faculty', val: club!.faculty },
-                    { icon: <Mail size={15} />, label: 'Email', val: club!.contact_email },
-                    { icon: <Phone size={15} />, label: 'Phone', val: club!.contact_phone },
-                    { icon: <Users size={15} />, label: 'Max Members', val: club!.max_members ? `${club!.max_members} members` : null },
-                    { icon: <Calendar size={15} />, label: 'Founded', val: club!.founded_year ? `${club!.founded_year}` : null },
-                  ].filter(r => r.val).map((row, i) => (
-                    <div key={i} className="flex items-start gap-3 px-5 py-3.5">
-                      <span className="mt-0.5 flex-shrink-0" style={{ color: '#F97316' }}>{row.icon}</span>
-                      <div>
-                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">{row.label}</p>
-                        <p className="text-sm font-semibold text-gray-700">{row.val}</p>
-                      </div>
-                    </div>
-                  ))}
+          {/* Right — Club details card */}
+          <div className="rvl d2" style={{ background: C.blue, borderRadius: 20, overflow: 'hidden', boxShadow: `0 24px 64px rgba(26,35,126,0.28)` }}>
+            <div style={{ padding: '18px 26px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+              <p style={{ color: 'rgba(255,255,255,0.5)', fontWeight: 800, fontSize: 12, letterSpacing: 2.5, textTransform: 'uppercase', margin: 0 }}>Club Details</p>
+            </div>
+            {[
+              { icon: <MapPin size={15} />,    label: 'University',   val: club!.university_name },
+              { icon: <Users size={15} />,     label: 'Faculty',      val: club!.faculty },
+              { icon: <Mail size={15} />,      label: 'Contact',      val: club!.contact_email },
+              { icon: <Phone size={15} />,     label: 'Phone',        val: club!.contact_phone },
+              { icon: <Users size={15} />,     label: 'Max Members',  val: club!.max_members ? `${club!.max_members} members` : null },
+              { icon: <Calendar size={15} />,  label: 'Founded',      val: club!.founded_year?.toString() ?? null },
+            ].map((row, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 16, padding: '15px 26px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+                <span style={{ color: C.red, marginTop: 2, flexShrink: 0 }}>{row.icon}</span>
+                <div>
+                  <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1.5, margin: '0 0 3px' }}>{row.label}</p>
+                  <p style={{ color: '#fff', fontWeight: 600, fontSize: 14, margin: 0 }}>{row.val || '—'}</p>
                 </div>
               </div>
-            </div>
+            ))}
+            {(club!.instagram_url || club!.facebook_url || club!.tiktok_url) && (
+              <div style={{ padding: '18px 26px', display: 'flex', gap: 10 }}>
+                {club!.instagram_url && (
+                  <a href={club!.instagram_url} target="_blank" rel="noopener noreferrer"
+                    style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', textDecoration: 'none' }}>
+                    <IgIcon size={18} />
+                  </a>
+                )}
+                {club!.facebook_url && (
+                  <a href={club!.facebook_url} target="_blank" rel="noopener noreferrer"
+                    style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', textDecoration: 'none' }}>
+                    <FbIcon size={18} />
+                  </a>
+                )}
+                {club!.tiktok_url && (
+                  <a href={club!.tiktok_url} target="_blank" rel="noopener noreferrer"
+                    style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', textDecoration: 'none' }}>
+                    <TikTokIcon size={18} />
+                  </a>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </section>
 
-      {/* ═══════════════════════════════════════════
-          SECTION 4 — UPCOMING ACTIVITIES
-      ═══════════════════════════════════════════ */}
+      {/* ═══════════════════════════════════════
+          4 — UPCOMING ACTIVITIES
+      ═══════════════════════════════════════ */}
       {club!.show_activities && (
-        <section ref={activitiesRef} className="py-16 lg:py-24 bg-white">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6">
-            {/* Section Header */}
-            <div className="flex items-end justify-between mb-10">
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-1 h-8 rounded-full" style={{ background: '#F97316' }} />
-                  <span className="text-sm font-bold uppercase tracking-widest" style={{ color: '#F97316' }}>Calendar</span>
-                </div>
-                <h2 className="text-3xl sm:text-4xl font-black leading-tight" style={{ color: '#1E3A8A' }}>
-                  What&apos;s Coming Up
-                </h2>
-              </div>
+        <section ref={activitiesRef} style={{ background: C.gray, padding: '80px 24px', minHeight: 400 }}>
+          <div style={{ maxWidth: 1280, margin: '0 auto' }}>
+            <div className="rvl" style={{ marginBottom: 48 }}>
+              <SectionTag>Calendar</SectionTag>
+              <h2 style={{ color: C.blue, fontSize: 'clamp(28px, 3.5vw, 48px)', fontWeight: 900, lineHeight: 1.12, letterSpacing: '-0.5px' }}>
+                What&apos;s Coming Up
+              </h2>
             </div>
 
-            {activities.length === 0 ? (
-              <div className="rounded-2xl border-2 border-dashed border-gray-200 py-16 text-center">
-                <Calendar size={40} className="mx-auto mb-4 text-gray-300" />
-                <p className="font-bold text-gray-400 text-lg mb-1">No upcoming activities</p>
-                <p className="text-gray-300 text-sm">Check back soon for upcoming events!</p>
-              </div>
-            ) : (
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {activities.map(act => (
-                  <div key={act.id} className="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all overflow-hidden">
-                    {/* Orange accent bar */}
-                    <div className="h-1.5 w-full" style={{ background: 'linear-gradient(90deg, #F97316, #fb923c)' }} />
-                    <div className="p-5">
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="text-xs font-bold px-2.5 py-1 rounded-full" style={{ background: 'rgba(249,115,22,0.1)', color: '#F97316' }}>
-                          Upcoming
-                        </span>
-                      </div>
-                      <h3 className="font-black text-gray-900 text-lg leading-tight mb-3">{act.title}</h3>
-                      {act.description && (
-                        <p className="text-sm text-gray-500 mb-3 leading-relaxed line-clamp-2">{act.description}</p>
-                      )}
-                      <div className="space-y-1.5 mb-4">
-                        <div className="flex items-center gap-2 text-sm text-gray-500">
-                          <Clock size={13} style={{ color: '#F97316' }} />
-                          <span>{formatDate(act.activity_date)}</span>
-                        </div>
-                        {act.location && (
-                          <div className="flex items-center gap-2 text-sm text-gray-500">
-                            <MapPin size={13} style={{ color: '#F97316' }} />
-                            <span>{act.location}</span>
-                          </div>
-                        )}
-                        {act.expected_attendance && (
-                          <div className="flex items-center gap-2 text-sm text-gray-500">
-                            <Users size={13} style={{ color: '#F97316' }} />
-                            <span>{act.expected_attendance} spots</span>
-                          </div>
-                        )}
-                      </div>
-                      <a href={whatsappLink} target="_blank" rel="noopener noreferrer"
-                        className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-bold text-white transition-all hover:opacity-90"
-                        style={{ background: '#25D366' }}>
-                        <Send size={13} /> RSVP via WhatsApp
-                      </a>
+            <div className="lg-grid-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
+              {activities.length === 0
+                ? [1, 2, 3].map(i => (
+                    <div key={i} className="rvl" style={{ background: '#fff', borderRadius: 14, border: '2px dashed #DDD', minHeight: 240, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 36, textAlign: 'center' }}>
+                      <Calendar size={44} style={{ color: '#CCC', marginBottom: 16 }} />
+                      <p style={{ fontWeight: 700, color: '#BBB', fontSize: 17, marginBottom: 8 }}>Activities Coming Soon!</p>
+                      <p style={{ color: '#CCC', fontSize: 14 }}>Check back for upcoming events.</p>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))
+                : activities.map((act, i) => {
+                    const col = activityColor(act.type)
+                    return (
+                      <div key={act.id} className="rvl" style={{ transitionDelay: `${i * 0.12}s`, background: '#fff', borderRadius: 14, overflow: 'hidden', boxShadow: '0 4px 24px rgba(0,0,0,0.08)', minHeight: 240 }}>
+                        <div style={{ height: 6, background: col }} />
+                        <div style={{ padding: 28 }}>
+                          <span style={{ display: 'inline-block', padding: '4px 14px', borderRadius: 999, background: `${col}18`, color: col, fontWeight: 700, fontSize: 12, marginBottom: 16, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                            {act.type || 'Event'}
+                          </span>
+                          <h3 style={{ fontWeight: 800, color: C.dark, fontSize: 20, lineHeight: 1.3, marginBottom: 16 }}>{act.title}</h3>
+                          {act.description && (
+                            <p style={{ color: '#888', fontSize: 14, lineHeight: 1.6, marginBottom: 14, overflow: 'hidden', WebkitLineClamp: 2, display: '-webkit-box', WebkitBoxOrient: 'vertical' }}>
+                              {act.description}
+                            </p>
+                          )}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 22 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#888', fontSize: 14 }}>
+                              <Clock size={14} style={{ color: col }} /> {fmtDate(act.activity_date)}
+                            </div>
+                            {act.location && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#888', fontSize: 14 }}>
+                                <MapPin size={14} style={{ color: col }} /> {act.location}
+                              </div>
+                            )}
+                            {act.expected_attendance && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#888', fontSize: 14 }}>
+                                <Users size={14} style={{ color: col }} /> {act.expected_attendance} spots
+                              </div>
+                            )}
+                          </div>
+                          <a href={wa} target="_blank" rel="noopener noreferrer" className="hov-btn"
+                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', padding: '13px', borderRadius: 10, background: '#25D366', color: '#fff', fontWeight: 700, fontSize: 14, textDecoration: 'none' }}>
+                            💬 RSVP via WhatsApp
+                          </a>
+                        </div>
+                      </div>
+                    )
+                  })
+              }
+            </div>
           </div>
         </section>
       )}
 
-      {/* ═══════════════════════════════════════════
-          SECTION 5 — ACHIEVEMENTS
-      ═══════════════════════════════════════════ */}
-      <section className="py-16 lg:py-24 overflow-hidden" style={{ background: '#0F172A' }}>
-        <div className="max-w-5xl mx-auto px-4 sm:px-6">
-          <div className="flex items-end gap-4 mb-10">
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-1 h-8 rounded-full" style={{ background: '#F97316' }} />
-                <span className="text-sm font-bold uppercase tracking-widest" style={{ color: '#F97316' }}>Hall of Fame</span>
-              </div>
-              <h2 className="text-3xl sm:text-4xl font-black text-white leading-tight">
-                Our Achievements
-              </h2>
-            </div>
+      {/* ═══════════════════════════════════════
+          5 — HALL OF FAME
+      ═══════════════════════════════════════ */}
+      <section style={{ background: C.navy, padding: '80px 24px', minHeight: 400 }}>
+        <div style={{ maxWidth: 1280, margin: '0 auto' }}>
+          <div className="rvl" style={{ marginBottom: 48 }}>
+            <SectionTag>Hall of Fame</SectionTag>
+            <h2 style={{ color: '#fff', fontSize: 'clamp(28px, 3.5vw, 48px)', fontWeight: 900, lineHeight: 1.12, letterSpacing: '-0.5px' }}>
+              Our Achievements
+            </h2>
           </div>
 
-          {achievements.length === 0 ? (
-            <div className="rounded-2xl border border-white/10 py-16 text-center">
-              <Trophy size={40} className="mx-auto mb-4" style={{ color: '#F59E0B' }} />
-              <p className="font-bold text-white/50 text-lg mb-1">Our story is just beginning.</p>
-              <p className="text-white/30 text-sm">Check back for updates on our achievements!</p>
-            </div>
-          ) : (
-            <div className="flex gap-5 overflow-x-auto pb-4 -mx-4 px-4 sm:-mx-6 sm:px-6" style={{ scrollbarWidth: 'none' }}>
-              {achievements.map((ach) => (
-                <div key={ach.id} className="flex-shrink-0 w-64 rounded-2xl p-5 border border-white/10 hover:border-orange-500/50 transition-all" style={{ background: 'rgba(255,255,255,0.05)' }}>
-                  <div className="text-4xl mb-4">{getAchievementIcon(ach.category, ach.is_milestone)}</div>
-                  <div className="text-xs font-bold uppercase tracking-wide mb-2" style={{ color: '#F97316' }}>
-                    {ach.category} · {ach.event_date.split('-')[0]}
+          <div className="lg-grid-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20 }}>
+            {achievements.length === 0
+              ? [1, 2, 3, 4].map(i => (
+                  <div key={i} className="rvl" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 14, minHeight: 200, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 28, textAlign: 'center' }}>
+                    <div style={{ fontSize: 52, marginBottom: 14 }}>🏆</div>
+                    <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 14, lineHeight: 1.65 }}>
+                      Your achievements<br />will be showcased here.
+                    </p>
                   </div>
-                  <h3 className="font-black text-white text-base leading-tight mb-2">{ach.title}</h3>
-                  {ach.content && <p className="text-white/50 text-sm leading-relaxed line-clamp-3">{ach.content}</p>}
-                </div>
-              ))}
-            </div>
-          )}
+                ))
+              : achievements.map((ach, i) => (
+                  <div key={ach.id} className="rvl" style={{ transitionDelay: `${i * 0.1}s`, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 14, minHeight: 200, padding: 28 }}>
+                    <div style={{ fontSize: 56, lineHeight: 1, marginBottom: 18 }}>{trophyIcon(ach.category, ach.is_milestone)}</div>
+                    <div style={{ color: C.red, fontWeight: 800, fontSize: 12, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>
+                      {ach.category} · {ach.event_date.split('-')[0]}
+                    </div>
+                    <h3 style={{ color: '#fff', fontWeight: 800, fontSize: 17, lineHeight: 1.3, marginBottom: 10 }}>{ach.title}</h3>
+                    {ach.content && (
+                      <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, lineHeight: 1.65, overflow: 'hidden', WebkitLineClamp: 3, display: '-webkit-box', WebkitBoxOrient: 'vertical' }}>
+                        {ach.content}
+                      </p>
+                    )}
+                  </div>
+                ))
+            }
+          </div>
         </div>
       </section>
 
-      {/* ═══════════════════════════════════════════
-          SECTION 6 — PHOTO GALLERY
-      ═══════════════════════════════════════════ */}
+      {/* ═══════════════════════════════════════
+          6 — GALLERY
+      ═══════════════════════════════════════ */}
       {club!.show_gallery && (
-        <section ref={galleryRef} className="py-16 lg:py-24 bg-white">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6">
-            <div className="flex items-end justify-between mb-10">
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-1 h-8 rounded-full" style={{ background: '#F97316' }} />
-                  <span className="text-sm font-bold uppercase tracking-widest" style={{ color: '#F97316' }}>Gallery</span>
-                </div>
-                <h2 className="text-3xl sm:text-4xl font-black leading-tight" style={{ color: '#1E3A8A' }}>
-                  Our Moments
-                </h2>
-              </div>
+        <section ref={galleryRef} style={{ background: C.white, padding: '80px 24px', minHeight: 400 }}>
+          <div style={{ maxWidth: 1280, margin: '0 auto' }}>
+            <div className="rvl" style={{ marginBottom: 48 }}>
+              <SectionTag>Gallery</SectionTag>
+              <h2 style={{ color: C.blue, fontSize: 'clamp(28px, 3.5vw, 48px)', fontWeight: 900, lineHeight: 1.12, letterSpacing: '-0.5px' }}>
+                Our Moments
+              </h2>
             </div>
 
-            {(club!.gallery_photos || []).length === 0 ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="aspect-square rounded-2xl flex items-center justify-center" style={{ background: '#F1F5F9' }}>
-                    <Camera size={28} style={{ color: '#CBD5E1' }} />
-                  </div>
-                ))}
-                <div className="col-span-2 sm:col-span-3 text-center py-4">
-                  <p className="text-gray-400 text-sm font-medium">Photos coming soon. Stay tuned!</p>
-                </div>
-              </div>
-            ) : (
-              <div className="columns-2 sm:columns-3 gap-3 space-y-3">
-                {(club!.gallery_photos || []).map((url, i) => (
-                  <div key={i}
-                    className="break-inside-avoid rounded-2xl overflow-hidden cursor-pointer relative group"
-                    onClick={() => setLightbox(url)}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={url} alt={`Gallery photo ${i + 1}`} className="w-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all opacity-0 group-hover:opacity-100" />
-                  </div>
-                ))}
-              </div>
-            )}
+            {/* Masonry */}
+            <div className="lg-grid-gal rvl" style={{ columns: '3 260px', columnGap: 12, marginBottom: 48 }}>
+              {gallery.length === 0
+                ? Array.from({ length: 6 }).map((_, i) => (
+                    <div key={i} className="gal-item" style={{ breakInside: 'avoid', marginBottom: 12, borderRadius: 10, overflow: 'hidden' }}>
+                      <div style={{ background: '#F0F0F0', height: [280, 210, 250, 230, 270, 200][i], display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+                        <Camera size={32} style={{ color: '#CCC' }} />
+                        <p style={{ color: '#CCC', fontSize: 13, fontWeight: 600 }}>Photos will appear here</p>
+                      </div>
+                    </div>
+                  ))
+                : gallery.map((photo, i) => (
+                    <div key={i} className="gal-item" style={{ breakInside: 'avoid', marginBottom: 12, borderRadius: 10, overflow: 'hidden', position: 'relative', cursor: 'pointer' }}
+                      onClick={() => setLightbox(photo)}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={photo.url} alt={photo.title} className="hov-scale" style={{ width: '100%', display: 'block', objectFit: 'cover' }} />
+                      <div className="gal-overlay" style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'flex-end', padding: 14 }}>
+                        <p style={{ color: '#fff', fontWeight: 700, fontSize: 14, lineHeight: 1.3 }}>{photo.title}</p>
+                      </div>
+                    </div>
+                  ))
+              }
+            </div>
+
+            <div style={{ textAlign: 'center' }}>
+              <button className="hov-btn"
+                style={{ padding: '14px 48px', borderRadius: 12, border: `2px solid ${C.blue}`, color: C.blue, fontWeight: 700, fontSize: 16, background: 'transparent', cursor: 'pointer' }}>
+                View All Photos
+              </button>
+            </div>
           </div>
 
           {/* Lightbox */}
           {lightbox && (
-            <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4" onClick={() => setLightbox(null)}>
-              <button className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-all">
-                <X size={20} />
+            <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.93)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
+              onClick={() => setLightbox(null)}>
+              <button style={{ position: 'absolute', top: 20, right: 20, width: 46, height: 46, borderRadius: '50%', background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <X size={22} />
               </button>
-              <div className="max-w-4xl w-full" onClick={e => e.stopPropagation()}>
+              <div style={{ maxWidth: 1000, width: '100%' }} onClick={e => e.stopPropagation()}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={lightbox} alt="Gallery photo" className="w-full max-h-[80vh] object-contain rounded-2xl" />
+                <img src={lightbox.url} alt={lightbox.title} style={{ width: '100%', maxHeight: '85vh', objectFit: 'contain', borderRadius: 14 }} />
+                <p style={{ color: '#fff', textAlign: 'center', marginTop: 16, fontWeight: 600, fontSize: 16 }}>{lightbox.title}</p>
               </div>
             </div>
           )}
         </section>
       )}
 
-      {/* ═══════════════════════════════════════════
-          VIDEO HIGHLIGHTS
-      ═══════════════════════════════════════════ */}
-      {videoHighlights.length > 0 && (
-        <section className="py-16 lg:py-24" style={{ background: '#F8FAFC' }}>
-          <div className="max-w-5xl mx-auto px-4 sm:px-6">
-            <div className="mb-10">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-1 h-8 rounded-full" style={{ background: '#F97316' }} />
-                <span className="text-sm font-bold uppercase tracking-widest" style={{ color: '#F97316' }}>Highlights</span>
-              </div>
-              <h2 className="text-3xl sm:text-4xl font-black leading-tight" style={{ color: '#1E3A8A' }}>
-                Video Highlights
-              </h2>
-            </div>
-            <div className="grid sm:grid-cols-2 gap-6">
-              {videoHighlights.flatMap(entry =>
-                entry.video_links.map((url, vi) => {
-                  const ytId = getYouTubeId(url)
-                  if (!ytId) return null
-                  return (
-                    <div key={`${entry.id}-${vi}`} className="rounded-2xl overflow-hidden border border-gray-100 shadow-sm">
-                      <div className="relative" style={{ paddingBottom: '56.25%' }}>
-                        <iframe
-                          className="absolute inset-0 w-full h-full"
-                          src={`https://www.youtube.com/embed/${ytId}`}
-                          title={entry.title}
-                          frameBorder="0"
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowFullScreen
-                        />
-                      </div>
-                      <div className="p-4">
-                        <p className="font-bold text-sm" style={{ color: '#1E3A8A' }}>{entry.title}</p>
-                        <p className="text-xs text-gray-400 mt-0.5">{formatDate(entry.event_date)}</p>
-                      </div>
-                    </div>
-                  )
-                }).filter(Boolean)
-              ).slice(0, 4)}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ═══════════════════════════════════════════
-          SECTION 7 — JOIN US CTA
-      ═══════════════════════════════════════════ */}
+      {/* ═══════════════════════════════════════
+          7 — JOIN CTA
+      ═══════════════════════════════════════ */}
       {club!.allow_join_applications && (
-        <section ref={joinRef} className="py-16 lg:py-24 relative overflow-hidden" style={{ background: '#F97316' }}>
-          {/* Background pattern */}
-          <div className="absolute inset-0" style={{ opacity: 0.06 }}>
-            <BasketballWatermark />
-          </div>
-
-          <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6">
-            <div className="grid lg:grid-cols-2 gap-12 items-center">
-              {/* Left: Copy */}
-              <div>
-                <p className="text-orange-100 font-bold uppercase tracking-widest text-sm mb-4">Ready to join?</p>
-                <h2 className="text-4xl sm:text-5xl font-black text-white leading-tight mb-5">
-                  Want to be part of<br />
-                  <span className="text-orange-100">{club!.name}?</span>
-                </h2>
-                <p className="text-orange-50 text-lg leading-relaxed mb-8">
-                  Apply now and our captain will get back to you. We welcome all passionate members who share our love for the sport!
-                </p>
-                <div className="flex flex-wrap gap-4 text-white/80 text-sm">
-                  {[
-                    '✅ Free to apply',
-                    '⚡ Quick response',
-                    '🤝 All skill levels welcome',
-                  ].map(t => <span key={t}>{t}</span>)}
-                </div>
+        <section ref={joinRef} style={{ background: C.red, padding: '80px 24px', minHeight: 400, position: 'relative', overflow: 'hidden' }}>
+          <BasketballBg />
+          <div className="lg-grid-cta" style={{ maxWidth: 1280, margin: '0 auto', position: 'relative', zIndex: 1, display: 'grid', gridTemplateColumns: '3fr 2fr', gap: 80, alignItems: 'center' }}>
+            {/* Copy */}
+            <div className="rvl">
+              <p style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 800, fontSize: 13, letterSpacing: 2.5, textTransform: 'uppercase', marginBottom: 20 }}>Ready to join?</p>
+              <h2 style={{ color: '#fff', fontSize: 'clamp(28px, 3.5vw, 52px)', fontWeight: 900, lineHeight: 1.12, letterSpacing: '-0.5px', marginBottom: 24 }}>
+                Want to be part of<br />
+                <span style={{ opacity: 0.85 }}>{club!.name}?</span>
+              </h2>
+              <p style={{ color: 'rgba(255,255,255,0.82)', fontSize: 18, lineHeight: 1.8, marginBottom: 36 }}>
+                Apply now and our captain will get back to you.<br />
+                We welcome all passionate members who share<br />
+                our love for the sport!
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {['✅  Free to apply', '⚡  Quick response', '❤️  All skill levels welcome'].map(t => (
+                  <div key={t} style={{ color: 'rgba(255,255,255,0.92)', fontSize: 16, fontWeight: 600 }}>{t}</div>
+                ))}
               </div>
+            </div>
 
-              {/* Right: Form */}
-              <div className="bg-white rounded-3xl shadow-2xl p-6 sm:p-8">
+            {/* Form card */}
+            <div className="rvl d2">
+              <div style={{ background: '#fff', borderRadius: 20, padding: 36, boxShadow: '0 32px 80px rgba(0,0,0,0.25)' }}>
                 {joinDone ? (
-                  <div className="text-center py-8">
-                    <CheckCircle size={56} className="mx-auto mb-4" style={{ color: '#10B981' }} />
-                    <h3 className="text-xl font-black mb-2" style={{ color: '#1E3A8A' }}>Application Submitted!</h3>
-                    <p className="text-gray-500">We&apos;ll be in touch soon. Welcome to the family! 🏀</p>
+                  <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                    <CheckCircle size={64} style={{ color: '#10B981', margin: '0 auto 20px', display: 'block' }} />
+                    <h3 style={{ color: C.blue, fontWeight: 900, fontSize: 24, marginBottom: 14 }}>Application Submitted! 🎉</h3>
+                    <p style={{ color: '#888', lineHeight: 1.75, fontSize: 15 }}>
+                      We&apos;ll review your application<br />and get back to you soon.
+                    </p>
                   </div>
                 ) : (
-                  <form onSubmit={submitJoin} className="space-y-4">
-                    <h3 className="text-xl font-black mb-5" style={{ color: '#1E3A8A' }}>Join Application</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="col-span-2">
-                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Full Name *</label>
-                        <input required
-                          className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm font-medium focus:outline-none focus:ring-2 focus:border-transparent transition-all"
-                          style={{ ['--tw-ring-color' as string]: '#F97316' }}
-                          placeholder="Your full name"
-                          value={joinForm.full_name}
-                          onChange={e => setJoinForm(p => ({ ...p, full_name: e.target.value }))} />
-                      </div>
+                  <form onSubmit={submitJoin}>
+                    <h3 style={{ color: C.blue, fontWeight: 900, fontSize: 22, marginBottom: 24 }}>Join Application</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                      {/* Full name */}
                       <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Student ID *</label>
-                        <input required
-                          className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm font-medium focus:outline-none focus:ring-2 transition-all"
-                          placeholder="e.g. 2024001234"
-                          value={joinForm.student_id}
-                          onChange={e => setJoinForm(p => ({ ...p, student_id: e.target.value }))} />
+                        <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 7 }}>Full Name *</label>
+                        <input required placeholder="Your full name"
+                          style={{ width: '100%', padding: '12px 16px', borderRadius: 10, border: '1.5px solid #E5E7EB', fontSize: 15, outline: 'none', fontFamily: 'inherit' }}
+                          value={joinForm.full_name} onChange={e => setJoinForm(p => ({ ...p, full_name: e.target.value }))} />
                       </div>
+                      {/* Student ID + Phone */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                        <div>
+                          <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 7 }}>Student ID *</label>
+                          <input required placeholder="2024001234"
+                            style={{ width: '100%', padding: '12px 16px', borderRadius: 10, border: '1.5px solid #E5E7EB', fontSize: 15, outline: 'none', fontFamily: 'inherit' }}
+                            value={joinForm.student_id} onChange={e => setJoinForm(p => ({ ...p, student_id: e.target.value }))} />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 7 }}>Phone</label>
+                          <input placeholder="+60 12-345 6789"
+                            style={{ width: '100%', padding: '12px 16px', borderRadius: 10, border: '1.5px solid #E5E7EB', fontSize: 15, outline: 'none', fontFamily: 'inherit' }}
+                            value={joinForm.phone} onChange={e => setJoinForm(p => ({ ...p, phone: e.target.value }))} />
+                        </div>
+                      </div>
+                      {/* Email */}
                       <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Phone</label>
-                        <input
-                          className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm font-medium focus:outline-none focus:ring-2 transition-all"
-                          placeholder="+60 12-345 6789"
-                          value={joinForm.phone}
-                          onChange={e => setJoinForm(p => ({ ...p, phone: e.target.value }))} />
+                        <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 7 }}>Email *</label>
+                        <input required type="email" placeholder="student@university.edu.my"
+                          style={{ width: '100%', padding: '12px 16px', borderRadius: 10, border: '1.5px solid #E5E7EB', fontSize: 15, outline: 'none', fontFamily: 'inherit' }}
+                          value={joinForm.email} onChange={e => setJoinForm(p => ({ ...p, email: e.target.value }))} />
                       </div>
-                      <div className="col-span-2">
-                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Email *</label>
-                        <input required type="email"
-                          className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm font-medium focus:outline-none focus:ring-2 transition-all"
-                          placeholder="student@university.edu.my"
-                          value={joinForm.email}
-                          onChange={e => setJoinForm(p => ({ ...p, email: e.target.value }))} />
+                      {/* Motivation */}
+                      <div>
+                        <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 7 }}>Why do you want to join?</label>
+                        <textarea placeholder="Tell us about yourself..." rows={3}
+                          style={{ width: '100%', padding: '12px 16px', borderRadius: 10, border: '1.5px solid #E5E7EB', fontSize: 15, outline: 'none', resize: 'none', fontFamily: 'inherit' }}
+                          value={joinForm.motivation} onChange={e => setJoinForm(p => ({ ...p, motivation: e.target.value }))} />
                       </div>
-                      <div className="col-span-2">
-                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Why do you want to join?</label>
-                        <textarea
-                          className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm font-medium focus:outline-none focus:ring-2 transition-all resize-none"
-                          placeholder="Tell us a bit about yourself and why you want to join..."
-                          rows={3}
-                          value={joinForm.motivation}
-                          onChange={e => setJoinForm(p => ({ ...p, motivation: e.target.value }))} />
-                      </div>
+                      {/* Submit */}
+                      <button type="submit" disabled={joining} className="hov-btn"
+                        style={{ width: '100%', padding: 16, borderRadius: 12, background: C.blue, color: '#fff', fontWeight: 800, fontSize: 16, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                        {joining ? 'Submitting...' : <><span>Submit Application</span> <ChevronRight size={18} /></>}
+                      </button>
                     </div>
-                    <button type="submit" disabled={joining}
-                      className="w-full py-4 rounded-xl font-black text-white text-base flex items-center justify-center gap-2 transition-all hover:opacity-90 active:scale-98 disabled:opacity-60"
-                      style={{ background: '#1E3A8A' }}>
-                      {joining ? 'Submitting...' : <>Submit Application <ChevronRight size={18} /></>}
-                    </button>
                   </form>
                 )}
               </div>
@@ -764,95 +745,63 @@ export default function ClubPublicPage() {
         </section>
       )}
 
-      {/* ═══════════════════════════════════════════
+      {/* ═══════════════════════════════════════
           FOOTER
-      ═══════════════════════════════════════════ */}
-      <footer style={{ background: '#0F172A' }}>
-        {/* Main footer */}
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12">
-          <div className="grid sm:grid-cols-3 gap-8">
+      ═══════════════════════════════════════ */}
+      <footer style={{ background: C.dark }}>
+        <div style={{ maxWidth: 1280, margin: '0 auto', padding: '60px 24px 0' }}>
+          <div className="footer-grid" style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 48, paddingBottom: 48, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
             {/* Brand */}
             <div>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-white text-lg" style={{ background: '#1E3A8A' }}>
-                  {club!.name[0]}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
+                <div style={{ width: 48, height: 48, borderRadius: 12, background: C.blue, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  {club!.logo_url
+                    // eslint-disable-next-line @next/next/no-img-element
+                    ? <img src={club!.logo_url} alt="logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    : <span style={{ color: '#fff', fontWeight: 900, fontSize: 22 }}>{club!.name[0]}</span>
+                  }
                 </div>
                 <div>
-                  <p className="font-black text-white text-sm leading-tight">{club!.name}</p>
-                  <p className="text-white/40 text-xs">{club!.university_name}</p>
+                  <p style={{ color: '#fff', fontWeight: 900, fontSize: 18, lineHeight: 1.2 }}>{club!.name}</p>
+                  {club!.university_name && <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 13 }}>{club!.university_name}</p>}
                 </div>
               </div>
               {club!.description && (
-                <p className="text-white/40 text-sm leading-relaxed line-clamp-3">{club!.description}</p>
+                <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: 14, lineHeight: 1.7, maxWidth: 400, overflow: 'hidden', WebkitLineClamp: 2, display: '-webkit-box', WebkitBoxOrient: 'vertical' }}>
+                  {club!.description}
+                </p>
               )}
             </div>
-
-            {/* Nav Links */}
+            {/* Quick links */}
             <div>
-              <h4 className="text-white/60 text-xs font-bold uppercase tracking-widest mb-4">Explore</h4>
-              <ul className="space-y-2">
+              <h4 style={{ color: 'rgba(255,255,255,0.35)', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 20 }}>Explore</h4>
+              <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {[
-                  { label: 'About', ref: aboutRef },
-                  ...(club!.show_activities ? [{ label: 'Activities', ref: activitiesRef }] : []),
-                  ...(club!.show_gallery ? [{ label: 'Gallery', ref: galleryRef }] : []),
-                  ...(club!.allow_join_applications ? [{ label: 'Join Us', ref: joinRef }] : []),
-                ].map(link => (
-                  <li key={link.label}>
-                    <button onClick={() => scrollTo(link.ref)}
-                      className="text-white/50 hover:text-white text-sm transition-colors font-medium">
-                      {link.label}
+                  { label: 'About',      ref: aboutRef },
+                  ...(club!.show_activities     ? [{ label: 'Activities', ref: activitiesRef }] : []),
+                  ...(club!.show_gallery         ? [{ label: 'Gallery',    ref: galleryRef    }] : []),
+                  ...(club!.allow_join_applications ? [{ label: 'Join Us',  ref: joinRef       }] : []),
+                ].map(lnk => (
+                  <li key={lnk.label}>
+                    <button onClick={() => scrollTo(lnk.ref)}
+                      style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.45)', fontSize: 15, fontWeight: 600, cursor: 'pointer', padding: 0, transition: 'color 0.2s' }}>
+                      {lnk.label}
                     </button>
                   </li>
                 ))}
               </ul>
             </div>
-
-            {/* Social & Contact */}
-            <div>
-              <h4 className="text-white/60 text-xs font-bold uppercase tracking-widest mb-4">Connect</h4>
-              <div className="flex gap-2 mb-4">
-                {club!.instagram_url && (
-                  <a href={club!.instagram_url} target="_blank" rel="noopener noreferrer"
-                    className="w-9 h-9 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/70 hover:text-white transition-all">
-                    <IgIcon size={16} />
-                  </a>
-                )}
-                {club!.facebook_url && (
-                  <a href={club!.facebook_url} target="_blank" rel="noopener noreferrer"
-                    className="w-9 h-9 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/70 hover:text-white transition-all">
-                    <FbIcon size={16} />
-                  </a>
-                )}
-                {club!.tiktok_url && (
-                  <a href={club!.tiktok_url} target="_blank" rel="noopener noreferrer"
-                    className="w-9 h-9 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/70 hover:text-white transition-all">
-                    <TikTokIcon size={16} />
-                  </a>
-                )}
-              </div>
-              {club!.contact_email && (
-                <a href={`mailto:${club!.contact_email}`} className="text-white/50 hover:text-white text-sm transition-colors flex items-center gap-2">
-                  <Mail size={13} /> {club!.contact_email}
-                </a>
-              )}
-            </div>
           </div>
         </div>
-
         {/* Bottom bar */}
-        <div className="border-t border-white/10">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-2">
-            <p className="text-white/30 text-xs">© {new Date().getFullYear()} {club!.name}. All rights reserved.</p>
-            <div className="flex items-center gap-4">
-              <Link href="/admin-login"
-                className="text-white/20 hover:text-white/50 text-xs transition-colors">
-                Admin Login
-              </Link>
-              <a href="https://solo-ai-uniclubos.vercel.app" target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-1.5 text-white/30 hover:text-white/60 text-xs transition-colors font-medium">
-                Powered by UniClub OS 🔗
-              </a>
-            </div>
+        <div style={{ maxWidth: 1280, margin: '0 auto', padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+          <p style={{ color: 'rgba(255,255,255,0.18)', fontSize: 13 }}>© {new Date().getFullYear()} {club!.name}. All rights reserved.</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+            <a href="/admin-login" style={{ color: 'rgba(255,255,255,0.14)', fontSize: 12, textDecoration: 'none' }}>Admin Login</a>
+            <a href="https://solo-ai-uniclubos.vercel.app" target="_blank" rel="noopener noreferrer"
+              style={{ color: 'rgba(255,255,255,0.28)', fontSize: 13, textDecoration: 'none', fontWeight: 600 }}>
+              Powered by UniClub OS 🔗
+            </a>
           </div>
         </div>
       </footer>
