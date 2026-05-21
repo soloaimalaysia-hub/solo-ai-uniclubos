@@ -9,6 +9,7 @@ export interface UcoUser {
   avatar_url?: string | null
   platform_role?: string | null
   club_id?: string | null
+  club_role?: string | null   // role inside the club e.g. 'Captain','Treasurer','Secretary'
 }
 
 interface AppStore {

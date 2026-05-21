@@ -10,15 +10,16 @@ import {
 import { createClient } from '@/lib/supabase/client'
 import { useAppStore } from '@/store/useAppStore'
 
+// badgeKey maps nav item to the module name in uco_approvals
 const NAV_ITEMS = [
-  { href: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/admin/members', icon: Users, label: 'Members' },
-  { href: '/admin/activities', icon: Calendar, label: 'Activities' },
-  { href: '/admin/finance', icon: DollarSign, label: 'Finance' },
-  { href: '/admin/history', icon: BookOpen, label: 'History' },
-  { href: '/admin/gallery', icon: ImageIcon, label: 'Gallery' },
-  { href: '/admin/announcements', icon: Bell, label: 'Announcements' },
-  { href: '/admin/settings', icon: Settings, label: 'Settings' },
+  { href: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard', badgeKey: '' },
+  { href: '/admin/members', icon: Users, label: 'Members', badgeKey: 'members' },
+  { href: '/admin/activities', icon: Calendar, label: 'Activities', badgeKey: 'activities' },
+  { href: '/admin/finance', icon: DollarSign, label: 'Finance', badgeKey: 'finance' },
+  { href: '/admin/history', icon: BookOpen, label: 'History', badgeKey: 'history' },
+  { href: '/admin/gallery', icon: ImageIcon, label: 'Gallery', badgeKey: '' },
+  { href: '/admin/announcements', icon: Bell, label: 'Announcements', badgeKey: 'announcements' },
+  { href: '/admin/settings', icon: Settings, label: 'Settings', badgeKey: '' },
 ]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -28,6 +29,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const [checking, setChecking] = useState(true)
   const [clubSlug, setClubSlug] = useState<string | null>(null)
+  const [badgeCounts, setBadgeCounts] = useState<Record<string, number>>({}) // e.g. { finance: 2, members: 1 }
 
   useEffect(() => {
     async function checkAuth() {
@@ -48,6 +50,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         setUser({
           ...profile,
           full_name: profile.full_name || profile.name || session.user.email,
+          club_role: profile.role || null,
         })
         if (profile.club_id) {
           const { data: clubData } = await supabase
@@ -71,6 +74,27 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     checkAuth()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Load sidebar badge counts (pending approvals per module)
+  useEffect(() => {
+    if (!user?.club_id) return
+    async function loadBadges() {
+      const supabase = createClient()
+      const { data } = await supabase
+        .from('uco_approvals')
+        .select('module')
+        .eq('club_id', user!.club_id!)
+        .eq('status', 'pending')
+      if (!data) return
+      const counts: Record<string, number> = {}
+      data.forEach(r => { counts[r.module] = (counts[r.module] || 0) + 1 })
+      setBadgeCounts(counts)
+    }
+    loadBadges()
+    // Refresh every 30 seconds
+    const interval = setInterval(loadBadges, 30000)
+    return () => clearInterval(interval)
+  }, [user?.club_id])
 
   async function handleLogout() {
     const supabase = createClient()
@@ -122,6 +146,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {NAV_ITEMS.map(item => {
           const active = pathname.startsWith(item.href)
           const Icon = item.icon
+          const badge = item.badgeKey ? (badgeCounts[item.badgeKey] || 0) : 0
           return (
             <Link key={item.href} href={item.href}
               onClick={() => mobile && setMobileSidebarOpen(false)}
@@ -132,7 +157,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               }`}>
               <Icon size={17} className="flex-shrink-0" />
               {item.label}
-              {active && <ChevronRight size={14} className="ml-auto opacity-60" />}
+              {badge > 0 && (
+                <span className="ml-auto text-xs font-black px-1.5 py-0.5 rounded-full min-w-[18px] text-center"
+                  style={{ background: '#F97316', color: '#fff' }}>
+                  {badge}
+                </span>
+              )}
+              {active && badge === 0 && <ChevronRight size={14} className="ml-auto opacity-60" />}
             </Link>
           )
         })}

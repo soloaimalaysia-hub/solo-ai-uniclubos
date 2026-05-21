@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAppStore } from '@/store/useAppStore'
-import { Users, Calendar, DollarSign, Bell, TrendingUp, Clock, ArrowUpRight } from 'lucide-react'
+import { Users, Calendar, DollarSign, Bell, TrendingUp, Clock, ArrowUpRight, AlertTriangle, CheckCircle } from 'lucide-react'
 import Link from 'next/link'
 
 interface Stats {
@@ -12,6 +12,11 @@ interface Stats {
   activities: number
   balance: number
   announcements: number
+}
+
+interface PendingApproval {
+  module: string
+  count: number
 }
 
 interface Activity {
@@ -34,6 +39,7 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<Stats>({ members: 0, pending: 0, activities: 0, balance: 0, announcements: 0 })
   const [upcoming, setUpcoming] = useState<Activity[]>([])
   const [recentMembers, setRecentMembers] = useState<Member[]>([])
+  const [pendingApprovals, setPendingApprovals] = useState<PendingApproval[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -70,8 +76,12 @@ export default function DashboardPage() {
       let recentQ = supabase.from('uco_members').select('id,full_name,role,joined_at').order('joined_at', { ascending: false }).limit(5)
       if (clubId) recentQ = recentQ.eq('club_id', clubId)
 
-      const [membersRes, pendingRes, activitiesRes, financeRes, announcementsRes, upcomingRes, recentRes] = await Promise.all([
-        membersCountQ, pendingCountQ, activitiesCountQ, financeQ, announcementsCountQ, upcomingQ, recentQ,
+      // Pending approvals across all modules
+      let approvalsQ = supabase.from('uco_approvals').select('module').eq('status', 'pending')
+      if (clubId) approvalsQ = approvalsQ.eq('club_id', clubId)
+
+      const [membersRes, pendingRes, activitiesRes, financeRes, announcementsRes, upcomingRes, recentRes, approvalsRes] = await Promise.all([
+        membersCountQ, pendingCountQ, activitiesCountQ, financeQ, announcementsCountQ, upcomingQ, recentQ, approvalsQ,
       ])
 
       const transactions: { type: string; amount: number }[] = financeRes.data || []
@@ -86,6 +96,13 @@ export default function DashboardPage() {
         balance,
         announcements: announcementsRes.count || 0,
       })
+      // Aggregate pending approvals by module
+      const approvalRows: { module: string }[] = approvalsRes.data || []
+      const approvalMap: Record<string, number> = {}
+      approvalRows.forEach(r => { approvalMap[r.module] = (approvalMap[r.module] || 0) + 1 })
+      const approvalList = Object.entries(approvalMap).map(([module, count]) => ({ module, count }))
+      setPendingApprovals(approvalList)
+
       setUpcoming(upcomingRes.data || [])
       setRecentMembers(recentRes.data || [])
     } catch (err) {
@@ -222,6 +239,58 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+
+      {/* Pending Approvals widget */}
+      {pendingApprovals.length > 0 && (
+        <div className="mt-6 rounded-2xl border p-5"
+          style={{ background: 'rgba(249,115,22,0.06)', borderColor: 'rgba(249,115,22,0.25)' }}>
+          <div className="flex items-center gap-2 mb-4">
+            <AlertTriangle size={16} style={{ color: '#F97316' }} />
+            <h2 className="font-bold text-sm" style={{ color: '#C2410C' }}>⚠️ Action Required — Pending Approvals</h2>
+            <span className="ml-auto text-xs font-bold px-2 py-0.5 rounded-full text-white" style={{ background: '#F97316' }}>
+              {pendingApprovals.reduce((s, p) => s + p.count, 0)}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {pendingApprovals.map(p => {
+              const moduleHref: Record<string, string> = {
+                finance: '/admin/finance',
+                activities: '/admin/activities',
+                members: '/admin/members',
+                announcements: '/admin/announcements',
+                history: '/admin/history',
+              }
+              const moduleIcon: Record<string, React.ReactNode> = {
+                finance: <DollarSign size={15} style={{ color: '#F97316' }} />,
+                activities: <Calendar size={15} style={{ color: '#F97316' }} />,
+                members: <Users size={15} style={{ color: '#F97316' }} />,
+                announcements: <Bell size={15} style={{ color: '#F97316' }} />,
+              }
+              return (
+                <Link key={p.module} href={moduleHref[p.module] || '#'}
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white border hover:shadow-sm transition-all"
+                  style={{ borderColor: 'rgba(249,115,22,0.2)' }}>
+                  {moduleIcon[p.module] || <Clock size={15} style={{ color: '#F97316' }} />}
+                  <div>
+                    <p className="text-sm font-bold capitalize" style={{ color: '#C2410C' }}>{p.module}</p>
+                    <p className="text-xs text-uco-text-muted">{p.count} pending</p>
+                  </div>
+                  <ArrowUpRight size={12} className="ml-auto text-uco-text-muted" />
+                </Link>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* All approved notice — no pending */}
+      {pendingApprovals.length === 0 && (
+        <div className="mt-6 flex items-center gap-3 px-4 py-3 rounded-xl"
+          style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)' }}>
+          <CheckCircle size={15} style={{ color: '#10B981' }} />
+          <p className="text-sm font-medium" style={{ color: '#059669' }}>All caught up — no pending approvals</p>
+        </div>
+      )}
 
       {/* Quick actions */}
       <div className="mt-6 bg-white rounded-2xl border border-uco-border p-5">
