@@ -222,10 +222,8 @@ export default function ClubPublicPage() {
   )
 
   // ── Theme image URLs ──
-  const THEME = club!.theme || 'default'
-  const SBASE = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://klrfpzxjsacriaqtfssf.supabase.co'
-  const HERO_BG_URL  = `${SBASE}/storage/v1/object/public/uco-media/themes/${THEME}/whats-bg.png.jpeg`
-  const ABOUT_BG_URL = `${SBASE}/storage/v1/object/public/uco-media/themes/${THEME}/about-bg.png.jpeg`
+  const HERO_BG_URL  = 'https://klrfpzxjsacriaqtfssf.supabase.co/storage/v1/object/public/uco-media/themes/default/hero-bg.png'
+  const ABOUT_BG_URL = 'https://klrfpzxjsacriaqtfssf.supabase.co/storage/v1/object/public/uco-media/themes/default/about-bg.png'
 
   const heroStyle  = { background: `url('${HERO_BG_URL}') center top / cover no-repeat, linear-gradient(135deg, #0d0d1a 0%, #1a0a00 50%, #0d0d0d 100%)` }
   const aboutStyle = { background: `url('${ABOUT_BG_URL}') left center / cover no-repeat, #0a0500` }
