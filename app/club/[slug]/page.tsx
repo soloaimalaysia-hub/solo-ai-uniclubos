@@ -284,97 +284,72 @@ export default function ClubPublicPage() {
 
       {/* ═══════════════════════════════════════
           1 — HERO
-          Layer 1: AI bg image
-          Layer 2: dark overlay
-          Layer 3: React content
       ═══════════════════════════════════════ */}
-      <section style={{ position: 'relative', minHeight: '100vh', width: '100%', overflow: 'hidden' }}>
-
-        {/* Layer 1 — AI background image */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={HERO_BG_URL} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top', zIndex: 0 }} />
-        <BasketballBg />
-
-        {/* Layer 2 — dark overlay */}
-        <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.40)', zIndex: 1 }} />
-        {/* Bottom vignette */}
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 180, background: 'linear-gradient(to bottom, transparent, rgba(0,0,0,0.92))', pointerEvents: 'none', zIndex: 2 }} />
-
-        {/* Layer 3 — content */}
-        <div style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '80px 24px 120px', color: '#fff', textAlign: 'center' }}>
-
-          {/* Logo */}
-          <div style={{ width: 112, height: 112, borderRadius: '50%', overflow: 'hidden', marginBottom: 24, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: C.blue, border: '3px solid rgba(255,107,0,0.8)', boxShadow: '0 0 30px rgba(255,107,0,0.5), 0 8px 40px rgba(0,0,0,0.5)' }}>
-            {club!.logo_url
-              // eslint-disable-next-line @next/next/no-img-element
-              ? <img src={club!.logo_url} alt="logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              : <span style={{ color: '#fff', fontSize: 48, fontWeight: 900 }}>{club!.name[0]}</span>
-            }
-          </div>
-
-          {/* Category badge */}
-          <span style={{ padding: '8px 22px', borderRadius: 999, background: C.red, color: '#fff', fontWeight: 700, fontSize: 14, letterSpacing: 1, marginBottom: 20, display: 'inline-block' }}>
-            🏀 {club!.category || 'Sports'}
-            {club!.founded_year && <span style={{ marginLeft: 12, opacity: 0.75, fontWeight: 400 }}>Est. {club!.founded_year}</span>}
-          </span>
-
-          {/* Club name */}
-          <h1 style={{ color: '#fff', fontSize: 'clamp(42px, 7vw, 88px)', fontWeight: 900, lineHeight: 1.0, marginBottom: 12, letterSpacing: '-2px', textShadow: '0 4px 32px rgba(0,0,0,0.6)', maxWidth: 900 }}>
+      <section
+        style={{
+          minHeight: '85vh',
+          width: '100%',
+          backgroundImage: 'url(https://klrfpzxjsacriaqtfssf.supabase.co/storage/v1/object/public/uco-media/themes/default/hero-bg.png)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          position: 'relative',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          backgroundColor: 'rgba(0,0,0,0.45)',
+        }} />
+        <div style={{
+          position: 'relative',
+          zIndex: 10,
+          textAlign: 'center',
+          color: 'white',
+          padding: '40px',
+        }}>
+          <h1 style={{
+            fontSize: '72px',
+            fontWeight: 900,
+            marginBottom: '16px',
+          }}>
             {club!.name}
           </h1>
-
-          {/* University */}
-          {club!.university_name && (
-            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 18, marginBottom: 36, letterSpacing: 0.5 }}>
-              {club!.university_name}
-            </p>
-          )}
-
-          {/* CTA buttons */}
-          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', justifyContent: 'center', marginBottom: 40 }}>
-            {club!.allow_join_applications && (
-              <button onClick={() => scrollTo(joinRef)} className="hov-btn"
-                style={{ padding: '13px 32px', borderRadius: 999, background: C.orange, color: '#fff', fontWeight: 700, fontSize: 16, border: 'none', boxShadow: '0 0 24px rgba(255,107,0,0.55)', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                🏆 Join This Club
-              </button>
-            )}
-            <button onClick={() => scrollTo(aboutRef)} className="hov-btn"
-              style={{ padding: '13px 32px', borderRadius: 999, background: 'transparent', color: '#fff', fontWeight: 700, fontSize: 16, border: '2px solid rgba(255,255,255,0.5)', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-              Learn More <ChevronRight size={18} />
+          <p style={{
+            fontSize: '20px',
+            opacity: 0.7,
+            marginBottom: '32px',
+          }}>
+            {club!.university_name}
+          </p>
+          <div style={{ display: 'flex', gap: '16px', justifyContent: 'center' }}>
+            <button onClick={() => scrollTo(joinRef)} style={{
+              padding: '12px 32px',
+              background: '#FF6B00',
+              border: 'none',
+              borderRadius: '999px',
+              color: 'white',
+              fontSize: '16px',
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}>
+              Join This Club
             </button>
-          </div>
-
-          {/* Social icons */}
-          {(club!.instagram_url || club!.facebook_url || club!.tiktok_url) && (
-            <div style={{ display: 'flex', gap: 12 }}>
-              {club!.instagram_url && (
-                <a href={club!.instagram_url} target="_blank" rel="noopener noreferrer"
-                  style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', textDecoration: 'none' }}>
-                  <IgIcon size={20} />
-                </a>
-              )}
-              {club!.facebook_url && (
-                <a href={club!.facebook_url} target="_blank" rel="noopener noreferrer"
-                  style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', textDecoration: 'none' }}>
-                  <FbIcon size={20} />
-                </a>
-              )}
-              {club!.tiktok_url && (
-                <a href={club!.tiktok_url} target="_blank" rel="noopener noreferrer"
-                  style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', textDecoration: 'none' }}>
-                  <TikTokIcon size={20} />
-                </a>
-              )}
-            </div>
-          )}
-
-          {/* Bottom teaser */}
-          <div style={{ position: 'absolute', bottom: 28, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 20, color: 'rgba(255,255,255,0.45)', fontSize: 13, whiteSpace: 'nowrap' }}>
-            <span>{memberCount}+ Members</span>
-            <span>·</span>
-            <span>{activityCount} Events This Year</span>
-            <span>·</span>
-            <span>Powered by UniClub OS</span>
+            <button onClick={() => scrollTo(aboutRef)} style={{
+              padding: '12px 32px',
+              background: 'transparent',
+              border: '2px solid white',
+              borderRadius: '999px',
+              color: 'white',
+              fontSize: '16px',
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}>
+              Learn More
+            </button>
           </div>
         </div>
       </section>
