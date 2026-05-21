@@ -292,15 +292,15 @@ export default function ClubPublicPage() {
       ═══════════════════════════════════════ */}
       <section style={{ position: 'relative', minHeight: '100vh', width: '100%', overflow: 'hidden' }}>
 
-        {/* Layer 1 — AI background */}
-        <div className="hero-bg-layer">
-          <BasketballBg />
-        </div>
+        {/* Layer 1 — AI background image */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={HERO_BG_URL} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top', zIndex: 0 }} />
+        <BasketballBg />
 
         {/* Layer 2 — dark overlay */}
-        <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.40)' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.40)', zIndex: 1 }} />
         {/* Bottom vignette */}
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 180, background: 'linear-gradient(to bottom, transparent, rgba(0,0,0,0.92))', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 180, background: 'linear-gradient(to bottom, transparent, rgba(0,0,0,0.92))', pointerEvents: 'none', zIndex: 2 }} />
 
         {/* Layer 3 — content */}
         <div style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '80px 24px 120px', color: '#fff', textAlign: 'center' }}>
@@ -415,12 +415,13 @@ export default function ClubPublicPage() {
       ═══════════════════════════════════════ */}
       <section ref={aboutRef} style={{ position: 'relative', minHeight: 600, overflow: 'hidden' }}>
 
-        {/* Layer 1 — About BG */}
-        <div className="about-bg-layer" />
+        {/* Layer 1 — About BG image */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={ABOUT_BG_URL} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'left center', zIndex: 0 }} />
 
         {/* Layer 2 — dark overlay + left accent */}
-        <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.62)' }} />
-        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 5, background: 'linear-gradient(to bottom, #FF6B00, #FF4500, #FF6B00)', boxShadow: '0 0 32px rgba(255,107,0,0.7)' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.62)', zIndex: 1 }} />
+        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 5, background: 'linear-gradient(to bottom, #FF6B00, #FF4500, #FF6B00)', boxShadow: '0 0 32px rgba(255,107,0,0.7)', zIndex: 2 }} />
 
         {/* Layer 3 — content */}
         <div style={{ position: 'relative', zIndex: 1, maxWidth: 1280, margin: '0 auto', padding: '90px 32px' }}>
