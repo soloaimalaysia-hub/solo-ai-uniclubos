@@ -24,6 +24,7 @@ export default function AnnouncementsPage() {
   const [editing, setEditing] = useState<Partial<Announcement> | null>(null)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [saveError, setSaveError] = useState('')
 
   useEffect(() => { loadItems() }, [])  // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -42,7 +43,9 @@ export default function AnnouncementsPage() {
   }
 
   async function saveItem() {
-    if (!editing?.title || !editing?.content) return
+    setSaveError('')
+    if (!editing?.title) { setSaveError('Title is required'); return }
+    if (!editing?.content) { setSaveError('Content is required'); return }
     setSaving(true)
     const supabase = createClient()
     const payload = {
@@ -190,13 +193,18 @@ export default function AnnouncementsPage() {
                 </label>
               </div>
             </div>
-            <div className="px-6 py-4 border-t border-uco-border flex justify-end gap-3">
-              <button onClick={() => setShowModal(false)} className="btn-outline text-sm px-4 py-2">Cancel</button>
-              <button onClick={saveItem} disabled={saving}
-                className="btn-primary text-sm px-5 py-2 disabled:opacity-60">
-                <Save size={14} />
-                {saving ? 'Saving...' : saved ? 'Saved!' : 'Save'}
-              </button>
+            <div className="px-6 py-4 border-t border-uco-border">
+              {saveError && (
+                <p className="text-red-500 text-xs mb-3 font-medium">⚠️ {saveError}</p>
+              )}
+              <div className="flex justify-end gap-3">
+                <button onClick={() => { setShowModal(false); setSaveError('') }} className="btn-outline text-sm px-4 py-2">Cancel</button>
+                <button onClick={saveItem} disabled={saving}
+                  className="btn-primary text-sm px-5 py-2 disabled:opacity-60">
+                  <Save size={14} />
+                  {saving ? 'Saving...' : saved ? 'Saved!' : 'Save'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

@@ -26,6 +26,7 @@ export default function HistoryPage() {
   const [editing, setEditing] = useState<Partial<HistoryEntry> | null>(null)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [saveError, setSaveError] = useState('')
 
   useEffect(() => { loadEntries() }, [])  // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -44,7 +45,9 @@ export default function HistoryPage() {
   }
 
   async function saveEntry() {
-    if (!editing?.title || !editing?.content) return
+    setSaveError('')
+    if (!editing?.title) { setSaveError('Title is required'); return }
+    if (!editing?.content) { setSaveError('Story / Description is required'); return }
     setSaving(true)
     const supabase = createClient()
     const payload = {
@@ -194,13 +197,18 @@ export default function HistoryPage() {
                 </span>
               </label>
             </div>
-            <div className="px-6 py-4 border-t border-uco-border flex justify-end gap-3">
-              <button onClick={() => setShowModal(false)} className="btn-outline text-sm px-4 py-2">Cancel</button>
-              <button onClick={saveEntry} disabled={saving}
-                className="btn-primary text-sm px-5 py-2 disabled:opacity-60">
-                <Save size={14} />
-                {saving ? 'Saving...' : saved ? 'Saved!' : 'Save Entry'}
-              </button>
+            <div className="px-6 py-4 border-t border-uco-border">
+              {saveError && (
+                <p className="text-red-500 text-xs mb-3 font-medium">⚠️ {saveError}</p>
+              )}
+              <div className="flex justify-end gap-3">
+                <button onClick={() => { setShowModal(false); setSaveError('') }} className="btn-outline text-sm px-4 py-2">Cancel</button>
+                <button onClick={saveEntry} disabled={saving}
+                  className="btn-primary text-sm px-5 py-2 disabled:opacity-60">
+                  <Save size={14} />
+                  {saving ? 'Saving...' : saved ? 'Saved!' : 'Save Entry'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

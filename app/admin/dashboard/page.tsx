@@ -36,9 +36,10 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    loadData()
+    // Wait until user is loaded from DB before fetching dashboard data
+    if (user !== null && user !== undefined) loadData()
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [user?.id])
 
   async function loadData() {
     const supabase = createClient()

@@ -36,41 +36,40 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         router.push('/admin-login')
         return
       }
-      if (!user) {
-        const { data: profile } = await supabase
-          .from('uco_users')
-          .select('*')
-          .eq('id', session.user.id)
-          .single()
-        if (profile) {
-          // Normalise: DB has both 'name' and 'full_name' columns
-          setUser({
-            ...profile,
-            full_name: profile.full_name || profile.name || session.user.email,
-          })
-          // Fetch club slug for public page link
-          if (profile.club_id) {
-            const { data: clubData } = await supabase
-              .from('uco_clubs').select('slug').eq('id', profile.club_id).single()
-            if (clubData?.slug) setClubSlug(clubData.slug)
-          }
-        } else {
-          // Auto-create profile for first-time admin login
-          const newProfile = {
-            id: session.user.id,
-            email: session.user.email,
-            full_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0],
-            name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0],
-            platform_role: 'super_admin',
-          }
-          await supabase.from('uco_users').upsert(newProfile)
-          setUser(newProfile)
+      // Always fetch fresh profile from DB (ensures club_id is up to date)
+      const { data: profile } = await supabase
+        .from('uco_users')
+        .select('*')
+        .eq('id', session.user.id)
+        .single()
+
+      if (profile) {
+        setUser({
+          ...profile,
+          full_name: profile.full_name || profile.name || session.user.email,
+        })
+        if (profile.club_id) {
+          const { data: clubData } = await supabase
+            .from('uco_clubs').select('slug').eq('id', profile.club_id).single()
+          if (clubData?.slug) setClubSlug(clubData.slug)
         }
+      } else {
+        // Auto-create profile for first-time admin login
+        const newProfile = {
+          id: session.user.id,
+          email: session.user.email,
+          full_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0],
+          name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0],
+          platform_role: 'super_admin',
+        }
+        await supabase.from('uco_users').upsert(newProfile)
+        setUser(newProfile)
       }
       setChecking(false)
     }
     checkAuth()
-  }, [user, router, setUser])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function handleLogout() {
     const supabase = createClient()
