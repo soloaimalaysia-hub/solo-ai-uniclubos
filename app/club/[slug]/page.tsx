@@ -412,11 +412,13 @@ export default function ClubPublicPage() {
                 About Our Club
               </h2>
 
-              <p style={{ color: 'rgba(255,255,255,0.82)', fontSize: 17, lineHeight: 1.9, marginBottom: 36 }}>
-                {club!.description ||
-                  `Welcome to ${club!.name}! We are a passionate group of students dedicated to our sport, building community, and creating memories that last a lifetime. Join us and be part of something amazing.`
-                }
-              </p>
+              <p
+                style={{ color: 'rgba(255,255,255,0.82)', fontSize: 17, lineHeight: 1.9, marginBottom: 36 }}
+                dangerouslySetInnerHTML={{
+                  __html: club!.description ||
+                    `Welcome to ${club!.name}! We are a passionate group of students dedicated to our sport, building community, and creating memories that last a lifetime. Join us and be part of something amazing.`
+                }}
+              />
 
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                 {club!.show_activities && (
